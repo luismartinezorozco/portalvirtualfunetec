@@ -69,15 +69,18 @@
         .whitespace-nowrap { white-space: nowrap; }
         .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
         
-        svg.icon { flex-shrink: 0 !important; display: inline-block !important; vertical-align: middle; }
+        /* Optimización Global de Iconos */
+        svg.icon { flex-shrink: 0 !important; display: inline-block !important; vertical-align: middle; width: 1.25rem; height: 1.25rem; transition: transform 0.2s ease; }
 
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 16px; min-height: 44px; border: 1px solid transparent; border-radius: 10px; font-family: 'Inter', sans-serif; font-weight: 500; font-size: 1rem; text-align: center; cursor: pointer; transition: 0.3s ease; text-decoration: none; user-select: none; max-width: 100%; }
-        .btn .icon { width: 20px; height: 20px; }
-        .btn-sm { padding: 8px 12px; min-height: 38px; font-size: 0.875rem; border-radius: 8px; }
-        .btn-sm .icon { width: 16px; height: 16px; }
-        .btn-lg { padding: 12px 24px; min-height: 52px; font-size: 1.125rem; border-radius: 10px; }
+        .btn:hover .icon { transform: scale(1.15); }
         .btn:active:not(:disabled) { transform: scale(0.97); }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+        
+        .btn-sm { padding: 8px 12px; min-height: 38px; font-size: 0.875rem; border-radius: 8px; }
+        .btn-sm .icon { width: 1rem; height: 1rem; }
+        .btn-lg { padding: 12px 24px; min-height: 52px; font-size: 1.125rem; border-radius: 10px; }
+        .btn-lg .icon { width: 1.5rem; height: 1.5rem; }
         
         .btn-primary { background-color: var(--primary); color: var(--white); }
         .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(225, 29, 42, 0.2); }
@@ -97,7 +100,7 @@
         .action-grid.cols-1 { grid-template-columns: 1fr; }
 
         .btn-card { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 90px; color: var(--text); font-weight: 500; font-size: 0.9rem; text-align: center; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02); gap: 8px; word-break: break-word; }
-        .btn-card .icon { width: 24px; height: 24px; margin: 0; transition: transform 0.3s ease; color: inherit; }
+        .btn-card .icon { width: 1.5rem; height: 1.5rem; margin: 0; color: inherit; }
         .btn-card.primary { color: var(--primary); border-color: rgba(225, 29, 42, 0.2); background-color: rgba(225, 29, 42, 0.02); }
         .btn-card.danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.2); background-color: rgba(239, 68, 68, 0.02); }
         .btn-card.success { color: var(--success); border-color: rgba(16, 185, 129, 0.2); background-color: rgba(16, 185, 129, 0.02); }
@@ -152,6 +155,7 @@
         .nav-item .icon { width: 22px; height: 22px; fill: none; stroke: currentColor; }
         .nav-item:hover:not(.active) { background-color: var(--bg); }
         .nav-item.active { background-color: rgba(225, 29, 42, 0.08); color: var(--primary); font-weight: 600; }
+        .nav-item.active .icon { transform: scale(1.1); color: var(--primary); }
         
         #sidebar-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 25; display: none; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(2px); }
         #sidebar-overlay.show { display: block; opacity: 1; }
@@ -161,18 +165,20 @@
         .content-area { flex: 1; padding: 2rem; overflow-y: auto; overflow-x: hidden; width: 100%; }
 
         .notification-btn, .profile-btn { position: relative; background: 0 0; border: none; border-radius: 8px; cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center; color: var(--text); min-height: 44px; }
-        .notification-btn .icon, .profile-btn .icon { width: 24px; height: 24px; }
+        .notification-btn .icon, .profile-btn .icon { width: 1.5rem; height: 1.5rem; }
         .notification-btn:hover, .profile-btn:hover { background-color: var(--bg); }
+        .notification-btn:hover .icon, .profile-btn:hover .icon { transform: scale(1.1); }
         
         .mobile-menu-btn { background: 0 0; border: none; color: var(--text); cursor: pointer; position: relative; z-index: 1000; padding: 0.5rem; display: none; align-items: center; justify-content: center; min-height: 44px; }
-        .mobile-menu-btn .icon { width: 24px; height: 24px; }
+        .mobile-menu-btn .icon { width: 1.5rem; height: 1.5rem; }
 
         .notification-badge { position: absolute; top: 4px; right: 4px; background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid var(--white); }
-        .notification-dropdown { position: absolute; top: calc(100% + 5px); right: 0; width: 320px; background: var(--white); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); max-height: 350px; overflow-y: auto; display: none; z-index: 50; }
+        
+        .notification-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 340px; background: var(--white); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15); max-height: 400px; overflow-y: auto; display: none; z-index: 100; -webkit-overflow-scrolling: touch; }
         .notification-dropdown.show { display: block; animation: fadeInLogin 0.2s ease-out forwards; }
-        .notif-item { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; transition: background 0.2s; }
+        .notif-item { padding: 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; transition: background 0.2s; word-break: break-word; line-height: 1.4; }
         .notif-item:hover { background-color: var(--bg); }
-        .notif-item.unread { background-color: rgba(225, 29, 42, 0.04); border-left: 3px solid var(--primary); }
+        .notif-item.unread { background-color: rgba(225, 29, 42, 0.04); border-left: 4px solid var(--primary); }
 
         .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; width: 100%; }
         .course-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--white); transition: transform 0.3s ease; display: flex; flex-direction: column; height: 100%; }
@@ -211,6 +217,7 @@
         @media (min-width: 640px) {
             .sm\:w-auto { width: auto !important; }
             .sm\:max-w-lg { max-width: 32rem !important; }
+            .sm\:flex-none { flex: none !important; }
         }
 
         @media (max-width: 992px) {
@@ -234,6 +241,8 @@
             
             .modal-overlay { align-items: flex-end; padding: 0; }
             .modal-content { padding: 1.5rem; width: 100%; margin: 0; border-radius: 20px 20px 0 0; border: none; animation: slideUpModal 0.3s ease-out forwards; }
+            
+            .notification-dropdown { position: fixed; top: 72px; right: 1rem; left: 1rem; width: auto; max-height: calc(100vh - 90px); }
         }
 
         @media (max-width: 480px) {
@@ -244,7 +253,6 @@
             .mobile-stack { flex-direction: column !important; align-items: stretch !important; width: 100%; gap: 12px; }
             .mobile-stack > * { width: 100% !important; max-width: 100% !important; margin: 0 !important; }
             
-            .notification-dropdown { left: 0; right: 0; width: 100%; border-radius: 0 0 16px 16px; border-left: none; border-right: none; }
             .modal-content { padding: 1.25rem; }
         }
     </style>
@@ -911,7 +919,7 @@
                 `;
                 
                 if (students.length === 0) {
-                    html += `<tr><td colspan="6" class="text-center text-gray">No hay usuarios registrados</td></tr>`;
+                    html += `<tr><td colspan=\"6\" class=\"text-center text-gray\">No hay usuarios registrados</td></tr>`;
                 }
                 
                 students.forEach((student) => {
@@ -931,7 +939,7 @@
                             <td>${statusBadge}</td>
                             <td><span class="badge badge-primary">${studentEnrollments} asignados</span></td>
                             <td>
-                                <div class="flex gap-2">
+                                <div class="flex gap-2 flex-wrap">
                                     <button class="btn btn-outline btn-sm flex-1 sm:flex-none" onclick="window.AdminViews.openEditUserModal('${student.id}')" title="Editar Estudiante">${window.Icons.edit} Editar</button>
                                     <button class="btn btn-danger btn-sm" onclick="window.AdminViews.confirmDeleteUser('${student.id}')" title="Eliminar Estudiante">${window.Icons.trash}</button>
                                 </div>
@@ -1275,7 +1283,7 @@
                 
                 let html = `
                     <div class="flex justify-between items-center mb-4 mobile-stack">
-                        <h3 class="truncate" style="max-width: 60%;">Curso: ${course.name}</h3>
+                        <h3 class="truncate w-full sm:w-auto">Curso: ${course.name}</h3>
                         <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('admin-courses')">${window.Icons.back} Volver</button>
                     </div>
                     <div class="course-view-layout">
@@ -1506,23 +1514,23 @@
                             <div>
                                 <label class="text-xs text-primary font-bold">FIRMAS (Imágenes PNG sin fondo)</label>
                                 <div class="flex gap-2 mb-2 items-center flex-wrap">
-                                    <div class="flex-1 w-full" style="min-width: 200px;">
+                                    <div class="flex-1 w-full min-w-[200px]">
                                         <input type="file" name="f1file" class="form-control mb-1" accept="image/png, image/jpeg">
                                         <input type="hidden" name="f1img" value="${val('f1img') || ''}">
                                         ${val('f1img') ? `<img src="${val('f1img')}" style="height:40px; object-fit:contain;">` : ''}
                                     </div>
-                                    <div class="flex-1 flex gap-2 w-full" style="min-width: 200px;">
+                                    <div class="flex-1 flex gap-2 w-full min-w-[200px]">
                                         <input type="text" name="f1n" class="form-control" value="${val('f1n')}" placeholder="Nombre 1">
                                         <input type="text" name="f1r" class="form-control" value="${val('f1r')}" placeholder="Cargo 1">
                                     </div>
                                 </div>
                                 <div class="flex gap-2 items-center flex-wrap mt-4">
-                                    <div class="flex-1 w-full" style="min-width: 200px;">
+                                    <div class="flex-1 w-full min-w-[200px]">
                                         <input type="file" name="f2file" class="form-control mb-1" accept="image/png, image/jpeg">
                                         <input type="hidden" name="f2img" value="${val('f2img') || ''}">
                                         ${val('f2img') ? `<img src="${val('f2img')}" style="height:40px; object-fit:contain;">` : ''}
                                     </div>
-                                    <div class="flex-1 flex gap-2 w-full" style="min-width: 200px;">
+                                    <div class="flex-1 flex gap-2 w-full min-w-[200px]">
                                         <input type="text" name="f2n" class="form-control" value="${val('f2n')}" placeholder="Nombre 2">
                                         <input type="text" name="f2r" class="form-control" value="${val('f2r')}" placeholder="Cargo 2">
                                     </div>
@@ -1532,9 +1540,9 @@
                             <div>
                                 <label class="text-xs text-primary font-bold">PIE DE PÁGINA (CONTACTO)</label>
                                 <div class="flex gap-2 flex-wrap">
-                                    <input type="text" name="ft1" class="form-control flex-1" style="min-width: 150px;" value="${val('ft1')}" placeholder="Email">
-                                    <input type="text" name="ft2" class="form-control flex-1" style="min-width: 150px;" value="${val('ft2')}" placeholder="Dirección">
-                                    <input type="text" name="ft3" class="form-control flex-1" style="min-width: 150px;" value="${val('ft3')}" placeholder="Teléfono">
+                                    <input type="text" name="ft1" class="form-control flex-1 min-w-[150px]" value="${val('ft1')}" placeholder="Email">
+                                    <input type="text" name="ft2" class="form-control flex-1 min-w-[150px]" value="${val('ft2')}" placeholder="Dirección">
+                                    <input type="text" name="ft3" class="form-control flex-1 min-w-[150px]" value="${val('ft3')}" placeholder="Teléfono">
                                 </div>
                             </div>
                         </div>
@@ -1594,7 +1602,7 @@
                             <h3 class="m-0">Certificados y Resultados</h3>
                             <button class="btn btn-outline btn-sm" onclick="window.AdminViews.openCertConfigModal()">${window.Icons.settings} Diseño PDF</button>
                         </div>
-                        <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
+                        <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar por estudiante o curso..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
                     </div>
                     <div class="card table-responsive">
                         <table id="admin-certs-table">
@@ -2265,7 +2273,7 @@
                     T(val('aprobo'), 140, 14);
                     T(fCourse, 155, 28, "times", "bold");
                     
-                    let durText = val('duracion');
+                    let durText = val('duracion') || "";
                     if (durText.includes('{horas}')) durText = durText.replace('{horas}', cHours);
                     else durText = durText.replace('48', cHours);
 
