@@ -945,13 +945,9 @@
             openEditUserModal: function(userId = null) {
                 const user = userId ? window.DB.get("users").find((u) => String(u.id) === String(userId)) : null;
                 const courses = window.DB.get("courses");
-                
-                // FIX: Validar que el userId exista y no sea la palabra "null" para buscar asignaciones previas
-                const userEnrollments = (userId && userId !== "null")
-                    ? window.DB.get("enrollments")
-                        .filter((e) => String(e.studentId) === String(userId))
-                        .map((e) => String(e.courseId))
-                    : [];
+                const userEnrollments = window.DB.get("enrollments")
+                    .filter((e) => String(e.studentId) === String(userId))
+                    .map((e) => String(e.courseId));
                     
                 let coursesHtml = "";
                 if (courses.length > 0) {
@@ -1035,24 +1031,15 @@
                     window.DB.update("users", userId, data);
                 } else {
                     const newUser = window.DB.add("users", data);
-                    // FIX: Asegurar la correcta captura del ID del estudiante recién creado
-                    targetUserId = newUser.id || data.id;
+                    targetUserId = newUser.id;
                 }
                 
-                // FIX: Asegurar que el ID sea estrictamente un string
-                const safeStudentId = String(targetUserId);
-                
-                // FIX: Extracción robusta de los cursos seleccionados
-                const selectedCourses = [];
-                formEl.querySelectorAll('input[name="assign_courses"]').forEach(cb => {
-                    if (cb.checked) selectedCourses.push(String(cb.value));
-                });
-                
-                const currentEnrollments = window.DB.get("enrollments").filter(e => String(e.studentId) === safeStudentId);
+                const selectedCourses = Array.from(formEl.querySelectorAll('input[name="assign_courses"]:checked')).map(el => String(el.value));
+                const currentEnrollments = window.DB.get("enrollments").filter(e => String(e.studentId) === String(targetUserId));
                 
                 selectedCourses.forEach((courseId) => {
                     if (!currentEnrollments.find(e => String(e.courseId) === String(courseId))) {
-                        window.DB.add("enrollments", { studentId: safeStudentId, courseId: String(courseId) });
+                        window.DB.add("enrollments", { studentId: String(targetUserId), courseId: String(courseId) });
                     }
                 });
                 
@@ -1596,6 +1583,549 @@
                 }
             },
             renderCerts: function(container) {
+                const certs = window.DB.get("certificates");
+                const users = window.DB.get("users");
+                const courses = window.DB.get("courses");
+                
+                let html = `
+                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                        <div class="flex items-center gap-2">
+                            <h3 class="m-0">Certificados y Resultados</h3>
+                            <button class="btn btn-outline btn-sm" onclick="window.AdminViews.openCertConfigModal()">Diseño PDF</button>
+                        </div>
+                        <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar por estudiante o curso..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
+                    </div>
+                    <div class="card table-responsive">
+                        <table id="admin-certs-table">
+                            <thead><tr><th>Estudiante</th><th>Curso</th><th>Puntaje</th><th>Estado</th><th>Acciones</th></tr></thead>
+                            <tbody>
+                `;
+                
+                if (certs.length === 0) {
+                    html += '<tr><td colspan="5" class="text-center text-gray">No hay registros</td></tr>';
+                }
+                
+                certs.forEach((cert) => {
+                    const student = users.find((u) => String(u.id) === String(cert.studentId));
+                    const course = courses.find((c) => String(c.id) === String(cert.courseId));
+                    
+                    if (student && course) {
+                        const badgeClass = cert.status === "pending" ? "badge-warning" : cert.status === "approved" ? "badge-success" : "badge-danger";
+                        const statusText = cert.status === "pending" ? "Pendiente" : cert.status === "approved" ? "Aprobado" : "Rechazado";
+                        
+                        html += `
+                            <tr>
+                                <td>${student.name}</td>
+                                <td>${course.name}</td>
+                                <td><span class="font-bold">${cert.score}%</span></td>
+                                <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                                <td>
+                                    <div class="flex gap-2 flex-wrap">
+                                        <button class="btn btn-sm btn-outline" title="Ver Detalles Examen" onclick="window.AdminViews.viewExamDetails('${student.id}', '${course.id}')">Detalles</button>
+                                        ${cert.status === "pending" ? `
+                                            <button class="btn btn-sm btn-success" title="Aprobar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'approved')">Aprobar</button>
+                                            <button class="btn btn-sm btn-danger" title="Rechazar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'rejected')">Rechazar</button>
+                                        ` : cert.status === "approved" ? `
+                                            <button class="btn btn-sm btn-primary" title="Editar Certificado" onclick="window.AdminViews.openEditCertModal('${cert.id}', '${student.name.replace(/'/g, "\\\\'")}', '${course.name.replace(/'/g, "\\\\'")}')">Editar</button>
+                                            <button class="btn btn-sm btn-secondary" title="Descargar" onclick="window.StudentViews.viewDiploma('${course.name.replace(/'/g, "\\\\'")}', '${student.name.replace(/'/g, "\\\\'")}', '${cert.id}')">Descargar</button>
+                                        ` : ""}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+                
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            },
+            viewExamDetails: function(studentId, courseId) {
+                const results = window.DB.get("exam_results")
+                    .filter((r) => String(r.studentId) === String(studentId) && String(r.courseId) === String(courseId))
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                if (results.length === 0) {
+                    return window.UI.showAlert("No hay detalles del examen registrados (versión antigua).");
+                }
+                
+                const recentResult = results[0];
+                const detailsHtml = recentResult.details.map((d, idx) => `
+                    <div class="mb-4 p-4 rounded border ${d.esCorrecta ? "bg-bg border-success" : "border-danger"}" style="background: ${d.esCorrecta ? "var(--bg)" : "#fef2f2"}; border-left-width: 4px;">
+                        <p class="font-semibold mb-2 text-text">${idx + 1}. ${d.pregunta}</p>
+                        <p class="text-sm text-gray">Respuesta Usuario: <span class="font-semibold ${d.esCorrecta ? "text-success" : "text-danger"}">${d.respuestaUsuario}</span></p>
+                        ${d.esCorrecta ? "" : `<p class="text-sm text-gray">Respuesta Correcta: <span class="font-semibold text-success">${d.respuestaCorrecta}</span></p>`}
+                    </div>
+                `).join("");
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">Detalle del Examen</h3>
+                    <p class="mb-2"><strong>Puntaje Obtenido:</strong> <span class="font-bold text-primary">${recentResult.score}%</span></p>
+                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentación:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
+                    <div style="max-height: 400px; overflow-y: auto; padding-right:10px;">
+                        ${detailsHtml}
+                    </div>
+                    <div class="text-center mt-6">
+                        <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cerrar</button>
+                    </div>
+                `);
+            },
+            openEditCertModal: function(certId, defaultName, defaultCourse) {
+                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
+                if (!cert) return;
+                
+                const nameToShow = cert.overrideName || defaultName;
+                const courseToShow = cert.overrideCourse || defaultCourse;
+                const dateToShow = cert.overrideDate || new Date().toISOString().split("T")[0];
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">Editar Datos Impresos del Certificado</h3>
+                    <form onsubmit="event.preventDefault(); window.AdminViews.saveCertEdits('${certId}', this)">
+                        <div class="form-group">
+                            <label>Nombre a mostrar</label>
+                            <input type="text" name="name" class="form-control" value="${nameToShow}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Curso a mostrar</label>
+                            <input type="text" name="course" class="form-control" value="${courseToShow}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Emisión</label>
+                            <input type="date" name="date" class="form-control" value="${dateToShow}" required>
+                        </div>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar</button>
+                        </div>
+                    </form>
+                `);
+            },
+            saveCertEdits: function(certId, formEl) {
+                window.DB.update("certificates", certId, {
+                    overrideName: formEl.elements.name.value,
+                    overrideCourse: formEl.elements.course.value,
+                    overrideDate: formEl.elements.date.value
+                });
+                window.UI.closeModal();
+                window.Router.navigate("admin-certs");
+            },
+            updateCertStatus: function(certId, status) {
+                window.DB.update("certificates", certId, { status: status });
+                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
+                
+                const msg = status === "approved" 
+                    ? "¡Tu certificado ha sido aprobado y está listo para descargar!" 
+                    : "Tu solicitud de certificado fue rechazada.";
+                    
+                window.notifyUser(cert.studentId, msg);
+                window.Router.navigate("admin-certs");
+            }
+        };
+
+        window.StudentViews = {
+            renderDashboard: function(container) {
+                const studentId = String(window.State.currentUser.id);
+                const enrollments = window.DB.get("enrollments").filter((e) => String(e.studentId) === studentId);
+                const courses = window.DB.get("courses");
+                const progresses = window.DB.get("progress");
+                
+                let html = `
+                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                        <h3 class="m-0">Mis Cursos Asignados</h3>
+                        <input type="text" class="form-control w-full sm:max-w-lg" placeholder="Buscar curso..." onkeyup="window.UIHelpers.filterGrid(this, 'student-courses-grid')">
+                    </div>
+                    <div class="course-grid" id="student-courses-grid">
+                `;
+                
+                if (enrollments.length === 0) {
+                    html += '<p class="text-gray">No tienes cursos asignados aún.</p>';
+                }
+                
+                enrollments.forEach((enrollment) => {
+                    const course = courses.find((c) => String(c.id) === String(enrollment.courseId));
+                    if (course) {
+                        const totalContents = window.DB.get("contents").filter((c) => String(c.courseId) === String(course.id)).length;
+                        const progress = progresses.find((p) => String(p.studentId) === studentId && String(p.courseId) === String(course.id));
+                        const completedCount = progress?.completedContentIds?.length || 0;
+                        const percentage = totalContents === 0 ? 0 : Math.round((completedCount / totalContents) * 100);
+                        
+                        const placeholderImg = `https://via.placeholder.com/300x160/f9fafb/6b7280?text=${encodeURIComponent(course.name.substring(0,2).toUpperCase())}`;
+                        const imgHtml = course.imageUrl 
+                            ? `<img src="${course.imageUrl}" alt="Portada" onerror="this.onerror=null; this.src='${placeholderImg}'">` 
+                            : `<span class="font-bold opacity-50" style="font-size: 2.5rem;">${course.name.substring(0,2).toUpperCase()}</span>`;
+                            
+                        html += `
+                            <div class="course-card">
+                                <div class="course-img">${imgHtml}</div>
+                                <div class="course-body">
+                                    <div>
+                                        <h4 class="course-title">${course.name}</h4>
+                                        <div class="progress-container">
+                                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                                        </div>
+                                        <p class="text-sm text-gray text-right font-bold">${percentage}% Completado</p>
+                                    </div>
+                                    <div class="action-grid cols-1 m-0 p-0 border-none">
+                                        <button class="btn-card primary" onclick="window.Router.navigate('student-course', {id: '${course.id}'})">
+                                            <span>Continuar Curso</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                html += `</div>`;
+                container.innerHTML = html;
+            },
+            renderCourse: function(container, courseIdStr) {
+                const courseId = String(courseIdStr);
+                const studentId = String(window.State.currentUser.id);
+                const course = window.DB.get("courses").find((c) => String(c.id) === courseId);
+                if (!course) {
+                    container.innerHTML = `<div style="display:none;">Curso no encontrado</div>`;
+                    return;
+                }
+
+                const contents = window.DB.get("contents").filter((c) => String(c.courseId) === courseId);
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === courseId);
+                
+                let progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === courseId);
+                if (!progress) {
+                    progress = {
+                        studentId: studentId,
+                        courseId: courseId,
+                        completedContentIds: [],
+                        intentos: 0,
+                        estadoExamen: "pendiente"
+                    };
+                    window.DB.add("progress", progress);
+                }
+                
+                let currentContentIndex = contents.findIndex((c) => !progress.completedContentIds.includes(String(c.id)));
+                if (currentContentIndex === -1) currentContentIndex = 0;
+                
+                const currentContent = contents[currentContentIndex];
+                const percentage = contents.length === 0 ? 0 : Math.round((progress.completedContentIds.length / contents.length) * 100);
+                const canTakeExam = percentage === 100 && exam;
+                const certificate = window.DB.get("certificates").find((c) => String(c.studentId) === studentId && String(c.courseId) === courseId);
+                
+                let examHtml = "";
+                if (canTakeExam) {
+                    if (progress.estadoExamen === "aprobado" || certificate) {
+                        examHtml = `
+                            <p class="mb-4">Has aprobado satisfactoriamente la evaluación final de este curso.</p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card success" onclick="window.Router.navigate('student-certs')">
+                                    <span>Ir a Mis Certificados</span>
+                                </button>
+                            </div>
+                        `;
+                    } else if (progress.estadoExamen === "reprobado") {
+                        examHtml = `
+                            <p class="mb-4 text-danger font-bold">Intento fallido. Tienes ${progress.intentos} intento(s) registrados.</p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card warning" onclick="window.StudentViews.requestExamRepeat('${courseId}')">
+                                    <span>Solicitar repetir examen</span>
+                                </button>
+                            </div>
+                        `;
+                    } else if (progress.estadoExamen === "solicitado") {
+                        examHtml = `
+                            <p class="mb-4 text-warning font-bold">Tu solicitud ha sido enviada.</p>
+                            <p class="text-sm text-gray">Espera a que el administrador habilite nuevamente el examen para ti.</p>
+                        `;
+                    } else {
+                        examHtml = `
+                            <p class="mb-4">Estás listo para presentar la evaluación final.</p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card primary" onclick="window.Router.navigate('student-exam', {id: '${courseId}'})">
+                                    <span>Presentar Examen</span>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+                
+                let mainHtml = `
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2 mobile-stack">
+                            <h2 class="font-bold text-text" style="font-size: 1.5rem;">${course.name}</h2>
+                            <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('student-dashboard')">Volver</button>
+                        </div>
+                        <p class="text-gray mb-4" style="font-size: 1rem; line-height: 1.6;">${course.description}</p>
+                        <div class="progress-container mb-2" style="height: 12px;">
+                            <div class="progress-bar bg-success" style="width: ${percentage}%;"></div>
+                        </div>
+                        <p class="text-right text-sm text-gray font-bold mb-4">Tu progreso: ${percentage}%</p>
+                    </div>
+
+                    <div class="course-view-layout">
+                        <div class="flex-col gap-4 w-full">
+                            <div class="video-container" id="player-area">
+                                ${currentContent ? window.StudentViews.generatePlayerHtml(currentContent) : '<div class="w-full text-center p-6 bg-bg"><p class="text-gray font-bold">Seleccione un contenido del temario para comenzar</p></div>'}
+                            </div>
+
+                            <div id="btn-container-area">
+                                ${currentContent && !progress.completedContentIds.includes(String(currentContent.id)) ? `
+                                    <div class="action-grid cols-1 m-0 p-0 border-none">
+                                        <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${currentContent.id}')">
+                                            <span>Marcar módulo como completado</span>
+                                        </button>
+                                    </div>
+                                ` : ""}
+                            </div>
+
+                            ${canTakeExam ? `
+                                <div class="card text-center mt-4 border ${progress.estadoExamen === "reprobado" ? "border-danger" : "border-success"} w-full" style="background: ${progress.estadoExamen === "reprobado" ? "#fef2f2" : "var(--white)"}; box-sizing:border-box; word-break:break-word;">
+                                    <h4 class="${progress.estadoExamen === "reprobado" ? "text-danger" : "text-primary"} mb-2 font-bold" style="font-size:1.2rem;">Evaluación Final</h4>
+                                    ${examHtml}
+                                </div>
+                            ` : ""}
+                        </div>
+
+                        <div class="content-list" style="align-self: start; max-height: 500px; overflow-y: auto;">
+                            <div class="p-4 bg-bg font-bold border-b text-text">Temario del curso</div>
+                            ${contents.map((c, idx) => {
+                                const isCompleted = progress.completedContentIds.includes(String(c.id));
+                                return `
+                                    <div class="content-item ${currentContent && String(currentContent.id) === String(c.id) ? "active" : ""} ${isCompleted ? "completed" : ""}"
+                                         onclick="window.StudentViews.changeContent('${courseId}', '${c.id}', event)">
+                                        <span class="title">${idx + 1}. ${c.title}</span>
+                                        ${isCompleted ? `<span class="flex text-success">${window.Icons.check}</span>` : ""}
+                                    </div>
+                                `;
+                            }).join("")}
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = mainHtml;
+            },
+            requestExamRepeat: function(courseId) {
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                
+                if (progress) {
+                    window.DB.update("progress", progress.id, { estadoExamen: "solicitado" });
+                    window.UI.showAlert("Se ha enviado la solicitud de repetición de examen al administrador.");
+                    window.Router.navigate("student-course", { id: courseId });
+                }
+            },
+            generatePlayerHtml: function(content) {
+                if (content.type === "video") {
+                    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+                    const match = content.url.match(ytRegex);
+                    const videoId = match ? match[1] : null;
+                    
+                    if (videoId) {
+                        return `
+                            <div class="video-wrapper" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0\\' allow=\\'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\\' allowfullscreen></iframe>'; this.style.cursor='default';">
+                                <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" class="video-thumbnail" alt="Video Thumbnail" onerror="this.src='https://img.youtube.com/vi/${videoId}/hqdefault.jpg'">
+                                <div class="video-overlay-main"></div>
+                                <div class="play-button">${window.Icons.play}</div>
+                            </div>
+                        `;
+                    }
+                    return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                }
+                
+                return `
+                    <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text" style="min-height: 300px;">
+                        <h3 class="mb-4">Enlace Externo / Documento</h3>
+                        <a href="${content.url}" target="_blank" class="btn btn-primary btn-lg w-full sm:w-auto">Abrir en nueva pestaña</a>
+                    </div>
+                `;
+            },
+            changeContent: function(courseId, contentId, event) {
+                const content = window.DB.get("contents")
+                    .filter((c) => String(c.courseId) === String(courseId))
+                    .find((c) => String(c.id) === String(contentId));
+                    
+                const playerArea = document.getElementById("player-area");
+                if (playerArea && content) {
+                    playerArea.innerHTML = window.StudentViews.generatePlayerHtml(content);
+                }
+                
+                document.querySelectorAll(".content-item").forEach((el) => el.classList.remove("active"));
+                if (event && event.currentTarget) {
+                    event.currentTarget.classList.add("active");
+                }
+                
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                
+                const btnArea = document.getElementById("btn-container-area");
+                if (btnArea) {
+                    if (progress?.completedContentIds.includes(String(contentId))) {
+                        btnArea.innerHTML = "";
+                    } else {
+                        btnArea.innerHTML = `
+                            <div class="action-grid cols-1 m-0 p-0 border-none">
+                                <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${contentId}')">
+                                    <span>Marcar módulo como completado</span>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            },
+            markCompleted: function(courseId, contentId) {
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                
+                if (progress && !progress.completedContentIds.includes(String(contentId))) {
+                    const newIds = [...progress.completedContentIds, String(contentId)];
+                    window.DB.update("progress", progress.id, { 
+                        completedContentIds: newIds, 
+                        estadoExamen: "pendiente" 
+                    });
+                }
+                window.Router.navigate("student-course", { id: courseId });
+            },
+            renderExam: function(container, courseId) {
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
+                const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
+                
+                let shuffledQuestions = (exam?.questions || []).map((q, qIndex) => {
+                    let options = q.options.map((text, oIndex) => ({ text, isCorrect: oIndex === q.correctIdx }));
+                    window.shuffleArray(options);
+                    let newCorrectIdx = options.findIndex((o) => o.isCorrect);
+                    
+                    return {
+                        originalQIndex: qIndex,
+                        q: q.q,
+                        options: options.map((o) => o.text),
+                        correctIdx: newCorrectIdx
+                    };
+                });
+                
+                window.shuffleArray(shuffledQuestions);
+                window.tempStudentExam = { passScore: exam.passScore, questions: shuffledQuestions };
+                
+                let html = `
+                    <div class="card mx-auto max-w-lg w-full overflow-x-hidden" style="box-sizing:border-box;">
+                        <div class="flex justify-between items-center mb-4 mobile-stack">
+                            <h3 class="m-0">Evaluación: ${course.name}</h3>
+                            <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('student-course', {id: '${courseId}'})">Volver</button>
+                        </div>
+                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo para aprobar: <strong>${exam.passScore}%</strong></p>
+
+                        <form id="exam-form" onsubmit="event.preventDefault(); window.StudentViews.submitExam('${courseId}')">
+                            ${window.tempStudentExam.questions.map((q, idx) => `
+                                <div class="mb-6 p-4 bg-bg rounded">
+                                    <h4 class="mb-3 text-text">${idx + 1}. ${q.q}</h4>
+                                    ${q.options.map((opt, oIdx) => `
+                                        <div class="mb-2 flex items-center gap-2 cursor-pointer text-gray">
+                                            <input type="radio" name="q_${idx}" value="${oIdx}" required style="transform: scale(1.2);">
+                                            <span style="word-break:break-word;">${opt}</span>
+                                        </div>
+                                    `).join("")}
+                                </div>
+                            `).join("")}
+                            <button type="submit" class="btn btn-primary btn-lg w-full mt-4" id="submit-exam-btn">Enviar Respuestas</button>
+                        </form>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            },
+            submitExam: function(courseId) {
+                const submitBtn = document.getElementById("submit-exam-btn");
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "Enviando...";
+                }
+                
+                const formEl = document.getElementById("exam-form");
+                let correctCount = 0;
+                let details = [];
+                
+                window.tempStudentExam.questions.forEach((q, idx) => {
+                    const selectedInput = formEl.elements[`q_${idx}`];
+                    const val = selectedInput ? selectedInput.value : null;
+                    const isCorrect = val !== null && parseInt(val) === q.correctIdx;
+                    
+                    if (isCorrect) correctCount++;
+                    
+                    details.push({
+                        pregunta: q.q,
+                        respuestaUsuario: val !== null ? q.options[parseInt(val)] : "Sin responder",
+                        respuestaCorrecta: q.options[q.correctIdx],
+                        esCorrecta: isCorrect
+                    });
+                });
+                
+                const percentage = Math.round((correctCount / window.tempStudentExam.questions.length) * 100);
+                const passed = percentage >= window.tempStudentExam.passScore;
+                const studentId = String(window.State.currentUser.id);
+                
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                const attempts = progress?.intentos ? progress.intentos + 1 : 1;
+                
+                if (progress) {
+                    window.DB.update("progress", progress.id, { 
+                        intentos: attempts, 
+                        estadoExamen: passed ? "aprobado" : "reprobado" 
+                    });
+                }
+                
+                window.DB.add("exam_results", {
+                    studentId: studentId,
+                    courseId: String(courseId),
+                    score: percentage,
+                    date: new Date().toISOString(),
+                    details: details
+                });
+                
+                let modalHtml = `
+                    <div class="text-center">
+                        <h2 class="mb-2 ${passed ? "text-success" : "text-danger"}">Calificación: ${percentage}%</h2>
+                        <p class="mb-4 text-gray">Respondiste correctamente ${correctCount} de ${window.tempStudentExam.questions.length} preguntas.</p>
+                `;
+                
+                if (passed) {
+                    modalHtml += `
+                        <div class="p-4 mb-4 rounded" style="background: #d1fae5;">
+                            <h4 class="text-success">¡Aprobado!</h4>
+                            <p>Tu solicitud de certificado ha sido enviada al administrador para su revisión.</p>
+                        </div>
+                        <div class="action-grid cols-1">
+                            <button class="btn-card primary" onclick="window.UI.closeModal(); window.Router.navigate('student-certs')">
+                                <span>Ir a Mis Certificados</span>
+                            </button>
+                        </div>
+                    `;
+                    
+                    window.DB.add("certificates", {
+                        studentId: studentId,
+                        courseId: String(courseId),
+                        status: "pending",
+                        score: percentage
+                    });
+                    
+                    const adminUser = window.DB.get("users").find((u) => u.role === "admin");
+                    if (adminUser) {
+                        window.notifyUser(adminUser.id, `${window.State.currentUser.name} ha aprobado un examen. Certificado pendiente de revisión.`);
+                    }
+                } else {
+                    modalHtml += `
+                        <div class="p-4 mb-4 rounded" style="background: #fee2e2;">
+                            <h4 class="text-danger">No Aprobado</h4>
+                            <p>Necesitas al menos ${window.tempStudentExam.passScore}% para aprobar.</p>
+                        </div>
+                        <div class="action-grid cols-1">
+                            <button class="btn-card secondary" onclick="window.UI.closeModal(); window.Router.navigate('student-course', {id: '${courseId}'})">
+                                <span>Volver al curso</span>
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                modalHtml += `</div>`;
+                window.UI.showModal(modalHtml);
+            },
+            renderCerts: function(container) {
                 const studentId = String(window.State.currentUser.id);
                 const certs = window.DB.get("certificates").filter((c) => String(c.studentId) === studentId);
                 const courses = window.DB.get("courses");
@@ -1704,14 +2234,7 @@
                 };
                 const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
 
-                Promise.all([
-                    loadJsPdf(), 
-                    getB64(val('f1img')), 
-                    getB64(val('f2img')),
-                    getB64('https://image2url.com/r2/default/images/1775071648590-9b1104bf-6774-470c-bcb6-9672d743f144.png'), // email icon
-                    getB64('https://image2url.com/r2/default/images/1775071789052-124cd7a8-b4d7-4cc4-be4b-292c9219cfa1.avif'), // map icon
-                    getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg')  // phone icon
-                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon]) => {
+                Promise.all([loadJsPdf(), getB64(val('f1img')), getB64(val('f2img'))]).then(([_, s1b64, s2b64]) => {
                     const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
                     const cX = 148.5; 
                     
@@ -1760,23 +2283,11 @@
                     T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
                     T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
 
-                    // Footer con los iconos correctos cargados externamente
-                    const footerData = [
-                        { x: 45, text: val('ft1'), icon: emailIcon },
-                        { x: 120, text: val('ft2'), icon: mapIcon },
-                        { x: 215, text: val('ft3'), icon: phoneIcon }
-                    ];
-
-                    footerData.forEach(f => {
-                        if (f.icon) {
-                            // Se ubica el icono de forma centrada donde iba el circulo rojo original (f.x, 198)
-                            pdf.addImage(f.icon, "PNG", f.x - 3, 195, 6, 6);
-                        } else {
-                            // Fallback de seguridad en caso de que la imagen no cargue
-                            pdf.setFillColor(225, 29, 42); 
-                            pdf.circle(f.x, 198, 2.5, 'F');
-                        }
-                        T(f.text, 199.5, 9, "helvetica", "bold", 50, f.x + 5, "left");
+                    // Footer
+                    pdf.setFillColor(225, 29, 42); 
+                    [[45, val('ft1')], [120, val('ft2')], [215, val('ft3')]].forEach(f => {
+                        pdf.circle(f[0], 198, 2.5, 'F');
+                        T(f[1], 199.5, 9, "helvetica", "bold", 50, f[0]+5, "left");
                     });
 
                     pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
@@ -1786,7 +2297,7 @@
             }
         };
 
-        const initAppLogic = () => {
+        document.addEventListener("DOMContentLoaded", () => {
             try {
                 const loadingEl = document.getElementById("loading-db");
                 const formEl = document.getElementById("login-form");
@@ -1823,16 +2334,9 @@
                     window.DB.init();
                 }
             } catch (error) {
-                console.error("Error en la inicialización:", error);
+                console.error("Error en la inicialización de DOMContentLoaded:", error);
             }
-        };
-
-        // Fix de Race Condition:
-        if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", initAppLogic);
-        } else {
-            initAppLogic();
-        }
+        });
     </script>
 </body>
 </html>
