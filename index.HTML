@@ -819,7 +819,7 @@
                 window.UI.showAlert("Contraseña actualizada exitosamente.");
             },
             renderDashboard: function(container) {
-                const students = window.DB.get("users").filter((u) => u.role === "student");
+                const students = window.DB.get("users").filter((u) => u.role !== "admin");
                 const courses = window.DB.get("courses");
                 const pendingCerts = window.DB.get("certificates").filter((c) => c.status === "pending");
                 const pendingExams = window.DB.get("progress").filter((p) => p.estadoExamen === "solicitado");
@@ -880,7 +880,7 @@
                 window.Router.navigate("admin-dashboard");
             },
             renderUsers: function(container) {
-                const students = window.DB.get("users").filter((u) => u.role === "student");
+                const students = window.DB.get("users").filter((u) => u.role !== "admin");
                 const enrollments = window.DB.get("enrollments");
                 
                 let html = `
@@ -1005,7 +1005,7 @@
                 
                 if (userId && userId !== "null") {
                     const oldUser = window.DB.get("users").find((u) => String(u.id) === String(userId));
-                    data.role = oldUser ? oldUser.role : "student";
+                    data.role = (oldUser && oldUser.role) ? oldUser.role : "student";
                 } else {
                     data.role = "student";
                 }
@@ -1644,7 +1644,7 @@
                 window.UI.showModal(`
                     <h3 class="mb-4">Detalle del Examen</h3>
                     <p class="mb-2"><strong>Puntaje Obtenido:</strong> <span class="font-bold text-primary">${recentResult.score}%</span></p>
-                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentación:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
+                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentation:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
                     <div style="max-height: 400px; overflow-y: auto; padding-right:10px;">
                         ${detailsHtml}
                     </div>
