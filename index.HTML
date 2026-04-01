@@ -945,9 +945,12 @@
             openEditUserModal: function(userId = null) {
                 const user = userId ? window.DB.get("users").find((u) => String(u.id) === String(userId)) : null;
                 const courses = window.DB.get("courses");
-                const userEnrollments = window.DB.get("enrollments")
-                    .filter((e) => String(e.studentId) === String(userId))
-                    .map((e) => String(e.courseId));
+                
+                const userEnrollments = (userId && userId !== "null")
+                    ? window.DB.get("enrollments")
+                        .filter((e) => String(e.studentId) === String(userId))
+                        .map((e) => String(e.courseId))
+                    : [];
                     
                 let coursesHtml = "";
                 if (courses.length > 0) {
@@ -955,11 +958,14 @@
                         <div class="form-group">
                             <label>Cursos Asignados</label>
                             <div class="p-2 border rounded" style="max-height: 140px; overflow-y: auto; border-color: var(--border);">
-                                ${courses.map((c) => `
+                                ${courses.map((c) => {
+                                    const safeName = c.name || "Curso no especificado";
+                                    return `
                                     <label class="flex items-center gap-2 mb-1 cursor-pointer text-sm font-normal text-text">
-                                        <input type="checkbox" name="assign_courses" value="${c.id}" ${userEnrollments.includes(String(c.id)) ? "checked" : ""}> ${c.name}
+                                        <input type="checkbox" name="assign_courses" value="${c.id}" ${userEnrollments.includes(String(c.id)) ? "checked" : ""}> ${safeName}
                                     </label>
-                                `).join("")}
+                                    `;
+                                }).join("")}
                             </div>
                             <p class="text-sm text-gray mt-1">Marque o desmarque para asignar/quitar cursos.</p>
                         </div>
@@ -1031,15 +1037,21 @@
                     window.DB.update("users", userId, data);
                 } else {
                     const newUser = window.DB.add("users", data);
-                    targetUserId = newUser.id;
+                    targetUserId = newUser.id || data.id;
                 }
                 
-                const selectedCourses = Array.from(formEl.querySelectorAll('input[name="assign_courses"]:checked')).map(el => String(el.value));
-                const currentEnrollments = window.DB.get("enrollments").filter(e => String(e.studentId) === String(targetUserId));
+                const safeStudentId = String(targetUserId);
+                
+                const selectedCourses = [];
+                formEl.querySelectorAll('input[name="assign_courses"]').forEach(cb => {
+                    if (cb.checked) selectedCourses.push(String(cb.value));
+                });
+                
+                const currentEnrollments = window.DB.get("enrollments").filter(e => String(e.studentId) === safeStudentId);
                 
                 selectedCourses.forEach((courseId) => {
                     if (!currentEnrollments.find(e => String(e.courseId) === String(courseId))) {
-                        window.DB.add("enrollments", { studentId: String(targetUserId), courseId: String(courseId) });
+                        window.DB.add("enrollments", { studentId: safeStudentId, courseId: String(courseId) });
                     }
                 });
                 
@@ -1095,18 +1107,23 @@
                 
                 courses.forEach((course) => {
                     const contentCount = window.DB.get("contents").filter(c => String(c.courseId) === String(course.id)).length;
-                    const placeholderImg = `https://via.placeholder.com/300x160/f9fafb/6b7280?text=${encodeURIComponent(course.name.substring(0,2).toUpperCase())}`;
+                    
+                    const cName = course.name || "Curso no especificado";
+                    const cDesc = course.description || "Sin descripción";
+                    const cNameShort = cName.length >= 2 ? cName.substring(0, 2).toUpperCase() : "CU";
+                    
+                    const placeholderImg = `https://via.placeholder.com/300x160/f9fafb/6b7280?text=${encodeURIComponent(cNameShort)}`;
                     const imgHtml = course.imageUrl 
                         ? `<img src="${course.imageUrl}" alt="Portada" onerror="this.onerror=null; this.src='${placeholderImg}'">` 
-                        : `<span class="font-bold opacity-50" style="font-size: 2.5rem;">${course.name.substring(0,2).toUpperCase()}</span>`;
+                        : `<span class="font-bold opacity-50" style="font-size: 2.5rem;">${cNameShort}</span>`;
                         
                     html += `
                         <div class="course-card">
                             <div class="course-img">${imgHtml}</div>
                             <div class="course-body">
                                 <div>
-                                    <h4 class="course-title">${course.name}</h4>
-                                    <p class="text-sm text-gray mb-2">${course.description.substring(0, 50)}...</p>
+                                    <h4 class="course-title">${cName}</h4>
+                                    <p class="text-sm text-gray mb-2">${cDesc.length > 50 ? cDesc.substring(0, 50) + "..." : cDesc}</p>
                                     <span class="badge badge-primary">${contentCount} Módulos</span>
                                 </div>
                                 <div class="action-grid cols-3">
@@ -1232,11 +1249,12 @@
             },
             confirmDeleteCourse: function(courseId) {
                 const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
+                const cName = course?.name || "Curso";
                 window.UI.showModal(`
                     <div class="text-center p-4">
                         <svg class="icon mx-auto mb-4 text-danger" style="width: 50px; height:50px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                         <h3 class="mb-2 text-danger font-bold text-xl">¡Advertencia Crítica!</h3>
-                        <p class="mb-4 text-gray">¿Estás seguro de que deseas eliminar el curso <strong>"${course?.name}"</strong>?</p>
+                        <p class="mb-4 text-gray">¿Estás seguro de que deseas eliminar el curso <strong>"${cName}"</strong>?</p>
                         <div class="flex justify-center gap-4 mt-6 mobile-stack">
                             <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cancelar</button>
                             <button class="btn btn-danger w-full" id="confirm-delete-btn" onclick="window.AdminViews.deleteCourse('${courseId}')">Eliminar Curso</button>
@@ -1272,9 +1290,11 @@
                 const contents = window.DB.get("contents").filter((c) => String(c.courseId) === String(courseId));
                 const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
                 
+                const cName = course.name || "Curso no especificado";
+
                 let html = `
                     <div class="flex justify-between items-center mb-4 mobile-stack">
-                        <h3 class="truncate w-full sm:w-auto">Curso: ${course.name}</h3>
+                        <h3 class="truncate w-full sm:w-auto">Curso: ${cName}</h3>
                         <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('admin-courses')">Volver</button>
                     </div>
                     <div class="course-view-layout">
@@ -1723,60 +1743,68 @@
 
         window.StudentViews = {
             renderDashboard: function(container) {
-                const studentId = String(window.State.currentUser.id);
-                const enrollments = window.DB.get("enrollments").filter((e) => String(e.studentId) === studentId);
-                const courses = window.DB.get("courses");
-                const progresses = window.DB.get("progress");
-                
-                let html = `
-                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
-                        <h3 class="m-0">Mis Cursos Asignados</h3>
-                        <input type="text" class="form-control w-full sm:max-w-lg" placeholder="Buscar curso..." onkeyup="window.UIHelpers.filterGrid(this, 'student-courses-grid')">
-                    </div>
-                    <div class="course-grid" id="student-courses-grid">
-                `;
-                
-                if (enrollments.length === 0) {
-                    html += '<p class="text-gray">No tienes cursos asignados aún.</p>';
-                }
-                
-                enrollments.forEach((enrollment) => {
-                    const course = courses.find((c) => String(c.id) === String(enrollment.courseId));
-                    if (course) {
-                        const totalContents = window.DB.get("contents").filter((c) => String(c.courseId) === String(course.id)).length;
-                        const progress = progresses.find((p) => String(p.studentId) === studentId && String(p.courseId) === String(course.id));
-                        const completedCount = progress?.completedContentIds?.length || 0;
-                        const percentage = totalContents === 0 ? 0 : Math.round((completedCount / totalContents) * 100);
-                        
-                        const placeholderImg = `https://via.placeholder.com/300x160/f9fafb/6b7280?text=${encodeURIComponent(course.name.substring(0,2).toUpperCase())}`;
-                        const imgHtml = course.imageUrl 
-                            ? `<img src="${course.imageUrl}" alt="Portada" onerror="this.onerror=null; this.src='${placeholderImg}'">` 
-                            : `<span class="font-bold opacity-50" style="font-size: 2.5rem;">${course.name.substring(0,2).toUpperCase()}</span>`;
+                try {
+                    const studentId = String(window.State.currentUser.id);
+                    const enrollments = window.DB.get("enrollments").filter((e) => String(e.studentId) === studentId);
+                    const courses = window.DB.get("courses");
+                    const progresses = window.DB.get("progress");
+                    
+                    let html = `
+                        <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                            <h3 class="m-0">Mis Cursos Asignados</h3>
+                            <input type="text" class="form-control w-full sm:max-w-lg" placeholder="Buscar curso..." onkeyup="window.UIHelpers.filterGrid(this, 'student-courses-grid')">
+                        </div>
+                        <div class="course-grid" id="student-courses-grid">
+                    `;
+                    
+                    if (enrollments.length === 0) {
+                        html += '<p class="text-gray">No tienes cursos asignados aún.</p>';
+                    }
+                    
+                    enrollments.forEach((enrollment) => {
+                        const course = courses.find((c) => String(c.id) === String(enrollment.courseId));
+                        if (course) {
+                            const totalContents = window.DB.get("contents").filter((c) => String(c.courseId) === String(course.id)).length;
+                            const progress = progresses.find((p) => String(p.studentId) === studentId && String(p.courseId) === String(course.id));
+                            const completedCount = progress?.completedContentIds?.length || 0;
+                            const percentage = totalContents === 0 ? 0 : Math.round((completedCount / totalContents) * 100);
                             
-                        html += `
-                            <div class="course-card">
-                                <div class="course-img">${imgHtml}</div>
-                                <div class="course-body">
-                                    <div>
-                                        <h4 class="course-title">${course.name}</h4>
-                                        <div class="progress-container">
-                                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                            const cName = course.name || "Curso no especificado";
+                            const cNameShort = cName.length >= 2 ? cName.substring(0, 2).toUpperCase() : "CU";
+                            
+                            const placeholderImg = `https://via.placeholder.com/300x160/f9fafb/6b7280?text=${encodeURIComponent(cNameShort)}`;
+                            const imgHtml = course.imageUrl 
+                                ? `<img src="${course.imageUrl}" alt="Portada" onerror="this.onerror=null; this.src='${placeholderImg}'">` 
+                                : `<span class="font-bold opacity-50" style="font-size: 2.5rem;">${cNameShort}</span>`;
+                                
+                            html += `
+                                <div class="course-card">
+                                    <div class="course-img">${imgHtml}</div>
+                                    <div class="course-body">
+                                        <div>
+                                            <h4 class="course-title">${cName}</h4>
+                                            <div class="progress-container">
+                                                <div class="progress-bar" style="width: ${percentage}%"></div>
+                                            </div>
+                                            <p class="text-sm text-gray text-right font-bold">${percentage}% Completado</p>
                                         </div>
-                                        <p class="text-sm text-gray text-right font-bold">${percentage}% Completado</p>
-                                    </div>
-                                    <div class="action-grid cols-1 m-0 p-0 border-none">
-                                        <button class="btn-card primary" onclick="window.Router.navigate('student-course', {id: '${course.id}'})">
-                                            <span>Continuar Curso</span>
-                                        </button>
+                                        <div class="action-grid cols-1 m-0 p-0 border-none">
+                                            <button class="btn-card primary" onclick="window.Router.navigate('student-course', {id: '${course.id}'})">
+                                                <span>Continuar Curso</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
-                    }
-                });
-                
-                html += `</div>`;
-                container.innerHTML = html;
+                            `;
+                        }
+                    });
+                    
+                    html += `</div>`;
+                    container.innerHTML = html;
+                } catch (error) {
+                    console.error("Error crítico renderizando Dashboard de Estudiante:", error);
+                    container.innerHTML = `<div class="p-6 text-center text-danger bg-white border border-danger rounded shadow"><h3 class="mb-2">Ha ocurrido un error</h3><p>La carga de los cursos ha fallado. Por favor notifique al administrador.</p></div>`;
+                }
             },
             renderCourse: function(container, courseIdStr) {
                 const courseId = String(courseIdStr);
@@ -1802,11 +1830,12 @@
                     window.DB.add("progress", progress);
                 }
                 
-                let currentContentIndex = contents.findIndex((c) => !progress.completedContentIds.includes(String(c.id)));
+                const completedIds = progress.completedContentIds || [];
+                let currentContentIndex = contents.findIndex((c) => !completedIds.includes(String(c.id)));
                 if (currentContentIndex === -1) currentContentIndex = 0;
                 
                 const currentContent = contents[currentContentIndex];
-                const percentage = contents.length === 0 ? 0 : Math.round((progress.completedContentIds.length / contents.length) * 100);
+                const percentage = contents.length === 0 ? 0 : Math.round((completedIds.length / contents.length) * 100);
                 const canTakeExam = percentage === 100 && exam;
                 const certificate = window.DB.get("certificates").find((c) => String(c.studentId) === studentId && String(c.courseId) === courseId);
                 
@@ -1847,13 +1876,16 @@
                     }
                 }
                 
+                const cName = course.name || "Curso no especificado";
+                const cDesc = course.description || "";
+
                 let mainHtml = `
                     <div class="mb-4">
                         <div class="flex justify-between items-center mb-2 mobile-stack">
-                            <h2 class="font-bold text-text" style="font-size: 1.5rem;">${course.name}</h2>
+                            <h2 class="font-bold text-text" style="font-size: 1.5rem;">${cName}</h2>
                             <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('student-dashboard')">Volver</button>
                         </div>
-                        <p class="text-gray mb-4" style="font-size: 1rem; line-height: 1.6;">${course.description}</p>
+                        <p class="text-gray mb-4" style="font-size: 1rem; line-height: 1.6;">${cDesc}</p>
                         <div class="progress-container mb-2" style="height: 12px;">
                             <div class="progress-bar bg-success" style="width: ${percentage}%;"></div>
                         </div>
@@ -1867,7 +1899,7 @@
                             </div>
 
                             <div id="btn-container-area">
-                                ${currentContent && !progress.completedContentIds.includes(String(currentContent.id)) ? `
+                                ${currentContent && !completedIds.includes(String(currentContent.id)) ? `
                                     <div class="action-grid cols-1 m-0 p-0 border-none">
                                         <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${currentContent.id}')">
                                             <span>Marcar módulo como completado</span>
@@ -1887,7 +1919,7 @@
                         <div class="content-list" style="align-self: start; max-height: 500px; overflow-y: auto;">
                             <div class="p-4 bg-bg font-bold border-b text-text">Temario del curso</div>
                             ${contents.map((c, idx) => {
-                                const isCompleted = progress.completedContentIds.includes(String(c.id));
+                                const isCompleted = completedIds.includes(String(c.id));
                                 return `
                                     <div class="content-item ${currentContent && String(currentContent.id) === String(c.id) ? "active" : ""} ${isCompleted ? "completed" : ""}"
                                          onclick="window.StudentViews.changeContent('${courseId}', '${c.id}', event)">
@@ -1957,7 +1989,8 @@
                 
                 const btnArea = document.getElementById("btn-container-area");
                 if (btnArea) {
-                    if (progress?.completedContentIds.includes(String(contentId))) {
+                    const completedIds = progress?.completedContentIds || [];
+                    if (completedIds.includes(String(contentId))) {
                         btnArea.innerHTML = "";
                     } else {
                         btnArea.innerHTML = `
@@ -1974,8 +2007,9 @@
                 const studentId = String(window.State.currentUser.id);
                 const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
                 
-                if (progress && !progress.completedContentIds.includes(String(contentId))) {
-                    const newIds = [...progress.completedContentIds, String(contentId)];
+                const completedIds = progress?.completedContentIds || [];
+                if (progress && !completedIds.includes(String(contentId))) {
+                    const newIds = [...completedIds, String(contentId)];
                     window.DB.update("progress", progress.id, { 
                         completedContentIds: newIds, 
                         estadoExamen: "pendiente" 
@@ -2001,15 +2035,15 @@
                 });
                 
                 window.shuffleArray(shuffledQuestions);
-                window.tempStudentExam = { passScore: exam.passScore, questions: shuffledQuestions };
+                window.tempStudentExam = { passScore: exam?.passScore || 60, questions: shuffledQuestions };
                 
                 let html = `
                     <div class="card mx-auto max-w-lg w-full overflow-x-hidden" style="box-sizing:border-box;">
                         <div class="flex justify-between items-center mb-4 mobile-stack">
-                            <h3 class="m-0">Evaluación: ${course.name}</h3>
+                            <h3 class="m-0">Evaluación: ${course?.name || "Curso"}</h3>
                             <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('student-course', {id: '${courseId}'})">Volver</button>
                         </div>
-                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo para aprobar: <strong>${exam.passScore}%</strong></p>
+                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo para aprobar: <strong>${window.tempStudentExam.passScore}%</strong></p>
 
                         <form id="exam-form" onsubmit="event.preventDefault(); window.StudentViews.submitExam('${courseId}')">
                             ${window.tempStudentExam.questions.map((q, idx) => `
@@ -2056,7 +2090,9 @@
                     });
                 });
                 
-                const percentage = Math.round((correctCount / window.tempStudentExam.questions.length) * 100);
+                const percentage = window.tempStudentExam.questions.length > 0 
+                    ? Math.round((correctCount / window.tempStudentExam.questions.length) * 100)
+                    : 0;
                 const passed = percentage >= window.tempStudentExam.passScore;
                 const studentId = String(window.State.currentUser.id);
                 
@@ -2145,11 +2181,12 @@
                     const course = courses.find((c) => String(c.id) === String(cert.courseId));
                     if (course) {
                         const topColor = cert.status === "approved" ? "var(--success)" : cert.status === "rejected" ? "var(--danger)" : "var(--warning)";
-                        
+                        const cName = course.name || "Curso no especificado";
+
                         html += `
                             <div class="card text-center flex-col justify-between" style="border-top: 4px solid ${topColor};">
                                 <div>
-                                    <h4 class="mb-2 text-text">${course.name}</h4>
+                                    <h4 class="mb-2 text-text">${cName}</h4>
                                     <p class="text-sm text-gray mb-2">Puntaje obtenido: ${cert.score}%</p>
                                 </div>
                         `;
@@ -2173,7 +2210,7 @@
                                 <div>
                                     <span class="badge badge-success mb-4 inline-block">Aprobado</span>
                                     <div class="action-grid cols-1 m-0 p-0 border-none">
-                                        <button class="btn-card primary" onclick="window.StudentViews.viewDiploma('${course.name.replace(/'/g, "\\\\'")}', '${window.State.currentUser.name.replace(/'/g, "\\\\'")}', '${cert.id}')">
+                                        <button class="btn-card primary" onclick="window.StudentViews.viewDiploma('${cName.replace(/'/g, "\\\\'")}', '${window.State.currentUser.name.replace(/'/g, "\\\\'")}', '${cert.id}')">
                                             <span>Ver Diploma</span>
                                         </button>
                                     </div>
@@ -2234,7 +2271,14 @@
                 };
                 const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
 
-                Promise.all([loadJsPdf(), getB64(val('f1img')), getB64(val('f2img'))]).then(([_, s1b64, s2b64]) => {
+                Promise.all([
+                    loadJsPdf(), 
+                    getB64(val('f1img')), 
+                    getB64(val('f2img')),
+                    getB64('https://image2url.com/r2/default/images/1775071648590-9b1104bf-6774-470c-bcb6-9672d743f144.png'), // email icon
+                    getB64('https://image2url.com/r2/default/images/1775071789052-124cd7a8-b4d7-4cc4-be4b-292c9219cfa1.avif'), // map icon
+                    getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg')  // phone icon
+                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon]) => {
                     const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
                     const cX = 148.5; 
                     
@@ -2283,11 +2327,23 @@
                     T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
                     T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
 
-                    // Footer
-                    pdf.setFillColor(225, 29, 42); 
-                    [[45, val('ft1')], [120, val('ft2')], [215, val('ft3')]].forEach(f => {
-                        pdf.circle(f[0], 198, 2.5, 'F');
-                        T(f[1], 199.5, 9, "helvetica", "bold", 50, f[0]+5, "left");
+                    // Footer con los iconos correctos cargados externamente
+                    const footerData = [
+                        { x: 45, text: val('ft1'), icon: emailIcon },
+                        { x: 120, text: val('ft2'), icon: mapIcon },
+                        { x: 215, text: val('ft3'), icon: phoneIcon }
+                    ];
+
+                    footerData.forEach(f => {
+                        if (f.icon) {
+                            // Se ubica el icono de forma centrada donde iba el circulo rojo original (f.x, 198)
+                            pdf.addImage(f.icon, "PNG", f.x - 3, 195, 6, 6);
+                        } else {
+                            // Fallback de seguridad en caso de que la imagen no cargue
+                            pdf.setFillColor(225, 29, 42); 
+                            pdf.circle(f.x, 198, 2.5, 'F');
+                        }
+                        T(f.text, 199.5, 9, "helvetica", "bold", 50, f.x + 5, "left");
                     });
 
                     pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
