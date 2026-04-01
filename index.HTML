@@ -700,14 +700,14 @@
                 if (!nav) return;
                 let html = window.State.currentUser.role === "admin" 
                     ? `
-                        <a class="nav-item" onclick="window.Router.navigate('admin-dashboard')">Dashboard</a>
-                        <a class="nav-item" onclick="window.Router.navigate('admin-users')">Usuarios y Asignaciones</a>
-                        <a class="nav-item" onclick="window.Router.navigate('admin-courses')">Cursos y Contenido</a>
-                        <a class="nav-item" onclick="window.Router.navigate('admin-certs')">Certificados y Resultados</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-dashboard')">${window.Icons.dashboard} Dashboard</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-users')">${window.Icons.users} Usuarios y Asignaciones</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-courses')">${window.Icons.book} Cursos y Contenido</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-certs')">${window.Icons.award} Certificados y Resultados</a>
                     ` 
                     : `
-                        <a class="nav-item" onclick="window.Router.navigate('student-dashboard')">Mis Cursos</a>
-                        <a class="nav-item" onclick="window.Router.navigate('student-certs')">Mis Certificados</a>
+                        <a class="nav-item" onclick="window.Router.navigate('student-dashboard')">${window.Icons.book} Mis Cursos</a>
+                        <a class="nav-item" onclick="window.Router.navigate('student-certs')">${window.Icons.award} Mis Certificados</a>
                     `;
                 nav.innerHTML = html;
             }
@@ -1055,6 +1055,7 @@
             confirmDeleteUser: function(userId) {
                 window.UI.showModal(`
                     <div class="text-center p-4">
+                        <svg class="icon mx-auto mb-4 text-danger" style="width: 50px; height:50px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                         <h3 class="mb-2 text-danger font-bold text-xl">¡Advertencia Crítica!</h3>
                         <p class="mb-4 text-gray">¿Eliminar estudiante completamente del sistema? Esto borrará sus progresos y certificados de forma permanente.</p>
                         <div class="flex justify-center gap-4 mt-6 mobile-stack">
@@ -1366,6 +1367,7 @@
             confirmDeleteContent: function(contentId, courseId) {
                 window.UI.showModal(`
                     <div class="text-center p-4">
+                        <svg class="icon mx-auto mb-4 text-danger" style="width: 50px; height:50px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                         <h3 class="mb-2 text-danger font-bold text-xl">Eliminar Módulo</h3>
                         <p class="mb-4 text-gray">¿Estás seguro de que deseas eliminar este contenido?</p>
                         <div class="flex justify-center gap-4 mt-6 mobile-stack">
@@ -1800,11 +1802,14 @@
                     window.DB.add("progress", progress);
                 }
                 
-                let currentContentIndex = contents.findIndex((c) => !progress.completedContentIds.includes(String(c.id)));
+                // Fix para IDs completados legacy
+                const currentCompletedIds = progress.completedContentIds || [];
+
+                let currentContentIndex = contents.findIndex((c) => !currentCompletedIds.includes(String(c.id)));
                 if (currentContentIndex === -1) currentContentIndex = 0;
                 
                 const currentContent = contents[currentContentIndex];
-                const percentage = contents.length === 0 ? 0 : Math.round((progress.completedContentIds.length / contents.length) * 100);
+                const percentage = contents.length === 0 ? 0 : Math.round((currentCompletedIds.length / contents.length) * 100);
                 const canTakeExam = percentage === 100 && exam;
                 const certificate = window.DB.get("certificates").find((c) => String(c.studentId) === studentId && String(c.courseId) === courseId);
                 
@@ -1865,7 +1870,7 @@
                             </div>
 
                             <div id="btn-container-area">
-                                ${currentContent && !progress.completedContentIds.includes(String(currentContent.id)) ? `
+                                ${currentContent && !currentCompletedIds.includes(String(currentContent.id)) ? `
                                     <div class="action-grid cols-1 m-0 p-0 border-none">
                                         <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${currentContent.id}')">
                                             <span>Marcar módulo como completado</span>
@@ -1885,11 +1890,12 @@
                         <div class="content-list" style="align-self: start; max-height: 500px; overflow-y: auto;">
                             <div class="p-4 bg-bg font-bold border-b text-text">Temario del curso</div>
                             ${contents.map((c, idx) => {
-                                const isCompleted = progress.completedContentIds.includes(String(c.id));
+                                const isCompleted = currentCompletedIds.includes(String(c.id));
                                 return `
                                     <div class="content-item ${currentContent && String(currentContent.id) === String(c.id) ? "active" : ""} ${isCompleted ? "completed" : ""}"
                                          onclick="window.StudentViews.changeContent('${courseId}', '${c.id}', event)">
                                         <span class="title">${idx + 1}. ${c.title}</span>
+                                        ${isCompleted ? `<span class="flex text-success">${window.Icons.check}</span>` : ""}
                                     </div>
                                 `;
                             }).join("")}
@@ -1920,6 +1926,7 @@
                             <div class="video-wrapper" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0\\' allow=\\'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\\' allowfullscreen></iframe>'; this.style.cursor='default';">
                                 <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" class="video-thumbnail" alt="Video Thumbnail" onerror="this.src='https://img.youtube.com/vi/${videoId}/hqdefault.jpg'">
                                 <div class="video-overlay-main"></div>
+                                <div class="play-button">${window.Icons.play}</div>
                             </div>
                         `;
                     }
@@ -1934,6 +1941,7 @@
                 `;
             },
             changeContent: function(courseId, contentId, event) {
+                const studentId = String(window.State.currentUser.id);
                 const content = window.DB.get("contents")
                     .filter((c) => String(c.courseId) === String(courseId))
                     .find((c) => String(c.id) === String(contentId));
@@ -1948,12 +1956,12 @@
                     event.currentTarget.classList.add("active");
                 }
                 
-                const studentId = String(window.State.currentUser.id);
                 const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
                 
                 const btnArea = document.getElementById("btn-container-area");
                 if (btnArea) {
-                    if (progress?.completedContentIds.includes(String(contentId))) {
+                    // Fix: Prevención segura en caso de arreglos no inicializados
+                    if (progress?.completedContentIds?.includes(String(contentId))) {
                         btnArea.innerHTML = "";
                     } else {
                         btnArea.innerHTML = `
@@ -1970,8 +1978,11 @@
                 const studentId = String(window.State.currentUser.id);
                 const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
                 
-                if (progress && !progress.completedContentIds.includes(String(contentId))) {
-                    const newIds = [...progress.completedContentIds, String(contentId)];
+                // Fix: Prevenir TypeError si el progreso base no tiene la propiedad
+                const currentIds = progress?.completedContentIds || [];
+                
+                if (progress && !currentIds.includes(String(contentId))) {
+                    const newIds = [...currentIds, String(contentId)];
                     window.DB.update("progress", progress.id, { 
                         completedContentIds: newIds, 
                         estadoExamen: "pendiente" 
@@ -1997,7 +2008,7 @@
                 });
                 
                 window.shuffleArray(shuffledQuestions);
-                window.tempStudentExam = { passScore: exam.passScore, questions: shuffledQuestions };
+                window.tempStudentExam = { passScore: exam?.passScore || 60, questions: shuffledQuestions };
                 
                 let html = `
                     <div class="card mx-auto max-w-lg w-full overflow-x-hidden" style="box-sizing:border-box;">
@@ -2005,7 +2016,7 @@
                             <h3 class="m-0">Evaluación: ${course.name}</h3>
                             <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('student-course', {id: '${courseId}'})">Volver</button>
                         </div>
-                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo para aprobar: <strong>${exam.passScore}%</strong></p>
+                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo para aprobar: <strong>${window.tempStudentExam.passScore}%</strong></p>
 
                         <form id="exam-form" onsubmit="event.preventDefault(); window.StudentViews.submitExam('${courseId}')">
                             ${window.tempStudentExam.questions.map((q, idx) => `
@@ -2208,21 +2219,14 @@
                     s.onload = res; s.onerror = rej; document.head.appendChild(s);
                 });
 
-                const getB64 = (url, isProxy=false) => new Promise(res => {
+                const getB64 = (url) => new Promise(res => {
                     if(!url) return res(null);
                     const img = new Image(); img.crossOrigin = "Anonymous";
                     img.onload = () => {
                         const cvs = document.createElement("canvas"); cvs.width = img.width; cvs.height = img.height;
                         cvs.getContext("2d").drawImage(img, 0, 0); res(cvs.toDataURL("image/png"));
                     };
-                    img.onerror = () => {
-                        if (!isProxy && url.startsWith('http') && !url.includes('cloudinary')) {
-                            res(getB64('https://corsproxy.io/?' + encodeURIComponent(url), true));
-                        } else {
-                            res(null);
-                        }
-                    };
-                    img.src = url;
+                    img.onerror = () => res(null); img.src = url;
                 });
 
                 const cfg = window.DB.get("cert_config")[0] || {};
@@ -2237,18 +2241,7 @@
                 };
                 const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
 
-                const icMail = "https://cdn-icons-png.flaticon.com/512/8747/8747888.png";
-                const icMap = "https://img.freepik.com/vector-premium/vector-ubicacion-icono-mapa-rojo-simple_393879-4461.jpg";
-                const icPhone = "https://us.123rf.com/450wm/photoart23d/photoart23d1902/photoart23d190201348/117662113-phone-symbol-icon-red-simple-isolated-vector-illustration.jpg";
-
-                Promise.all([
-                    loadJsPdf(), 
-                    getB64(val('f1img')), 
-                    getB64(val('f2img')),
-                    getB64(icMail),
-                    getB64(icMap),
-                    getB64(icPhone)
-                ]).then(([_, s1b64, s2b64, m1, m2, m3]) => {
+                Promise.all([loadJsPdf(), getB64(val('f1img')), getB64(val('f2img'))]).then(([_, s1b64, s2b64]) => {
                     const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
                     const cX = 148.5; 
                     
@@ -2297,23 +2290,12 @@
                     T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
                     T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
 
-                    // Footer con Iconos Reales
-                    pdf.setTextColor(50, 50, 50);
-                    pdf.setFont("helvetica", "bold");
-                    pdf.setFontSize(10); 
-                    
-                    let t1 = val('ft1'), t2 = val('ft2'), t3 = val('ft3');
-                    let w2 = pdf.getTextWidth(t2), w3 = pdf.getTextWidth(t3);
-                    let fy = 199.5, cy = 198.5;
-
-                    if(m1) pdf.addImage(m1, "PNG", 38, cy - 2.5, 5, 5);
-                    pdf.text(t1, 45, fy, { align: "left" });
-
-                    if(m2) pdf.addImage(m2, "PNG", cX - (w2/2) - 7, cy - 2.5, 5, 5);
-                    pdf.text(t2, cX, fy, { align: "center" });
-
-                    if(m3) pdf.addImage(m3, "PNG", 257 - w3 - 7, cy - 2.5, 5, 5);
-                    pdf.text(t3, 257, fy, { align: "right" });
+                    // Footer
+                    pdf.setFillColor(225, 29, 42); 
+                    [[45, val('ft1')], [120, val('ft2')], [215, val('ft3')]].forEach(f => {
+                        pdf.circle(f[0], 198, 2.5, 'F');
+                        T(f[1], 199.5, 9, "helvetica", "bold", 50, f[0]+5, "left");
+                    });
 
                     pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
                     window.UI.closeModal();
@@ -2322,7 +2304,7 @@
             }
         };
 
-        document.addEventListener("DOMContentLoaded", () => {
+        const initAppLogic = () => {
             try {
                 const loadingEl = document.getElementById("loading-db");
                 const formEl = document.getElementById("login-form");
@@ -2359,9 +2341,16 @@
                     window.DB.init();
                 }
             } catch (error) {
-                console.error("Error en la inicialización de DOMContentLoaded:", error);
+                console.error("Error en la inicialización:", error);
             }
-        });
+        };
+
+        // Fix de Race Condition:
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initAppLogic);
+        } else {
+            initAppLogic();
+        }
     </script>
 </body>
 </html>
