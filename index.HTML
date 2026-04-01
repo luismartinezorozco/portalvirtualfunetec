@@ -464,13 +464,14 @@
                             if (window.dbInitialized) {
                                 if (window.State.currentUser && window.currentRoute.id) {
                                     window.renderNotifications();
+                                    window.Router.navigate(window.currentRoute.id, window.currentRoute.params);
                                 }
                             } else {
                                 loadedCount++;
                                 if (loadedCount === collections.length) {
                                     window.dbInitialized = true;
                                     
-                                    if (!cache.users.some(u => u.role === "admin")) {
+                                    if (!cache.users.some(u => u.document === "admin@funetec.com")) {
                                         window.DB.add("users", {
                                             name: "Administrador",
                                             document: "admin@funetec.com",
@@ -691,7 +692,7 @@
                 let html = window.State.currentUser.role === "admin" 
                     ? `
                         <a class="nav-item" onclick="window.Router.navigate('admin-dashboard')">${window.Icons.dashboard} Dashboard</a>
-                        <a class="nav-item" onclick="window.Router.navigate('admin-users')">${window.Icons.users} Estudiantes y Asignaciones</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-users')">${window.Icons.users} Usuarios y Asignaciones</a>
                         <a class="nav-item" onclick="window.Router.navigate('admin-courses')">${window.Icons.book} Cursos y Contenido</a>
                         <a class="nav-item" onclick="window.Router.navigate('admin-certs')">${window.Icons.award} Certificados y Resultados</a>
                     ` 
@@ -819,7 +820,7 @@
                 window.UI.showAlert("Contraseña actualizada exitosamente.");
             },
             renderDashboard: function(container) {
-                const students = window.DB.get("users").filter((u) => u.role !== "admin");
+                const students = window.DB.get("users").filter((u) => u.document !== "admin@funetec.com");
                 const courses = window.DB.get("courses");
                 const pendingCerts = window.DB.get("certificates").filter((c) => c.status === "pending");
                 const pendingExams = window.DB.get("progress").filter((p) => p.estadoExamen === "solicitado");
@@ -827,7 +828,7 @@
                 let html = `
                     <div class="course-grid mb-6">
                         <div class="card text-center">
-                            <h3 class="text-gray">Estudiantes Registrados</h3>
+                            <h3 class="text-gray">Usuarios en el Sistema</h3>
                             <div class="text-primary font-bold" style="font-size: 3rem;">${students.length}</div>
                         </div>
                         <div class="card text-center">
@@ -880,27 +881,27 @@
                 window.Router.navigate("admin-dashboard");
             },
             renderUsers: function(container) {
-                const students = window.DB.get("users").filter((u) => u.role !== "admin");
+                const students = window.DB.get("users").filter((u) => u.document !== "admin@funetec.com");
                 const enrollments = window.DB.get("enrollments");
                 
                 let html = `
                     <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
-                        <h3 class="m-0">Gestión de Estudiantes</h3>
+                        <h3 class="m-0">Gestión de Usuarios</h3>
                         <div class="flex gap-2 w-full sm:w-auto">
-                            <input type="text" class="form-control" placeholder="Buscar estudiante..." onkeyup="window.UIHelpers.filterTable(this, 'users-table')">
+                            <input type="text" class="form-control" placeholder="Buscar usuario..." onkeyup="window.UIHelpers.filterTable(this, 'users-table')">
                             <button class="btn btn-primary whitespace-nowrap" onclick="window.AdminViews.openEditUserModal()">${window.Icons.plus} Nuevo</button>
                         </div>
                     </div>
                     <div class="card table-responsive">
                         <table id="users-table">
                             <thead>
-                                <tr><th>Nombre</th><th>Cédula</th><th>Estado</th><th>Cursos Asignados</th><th>Acciones</th></tr>
+                                <tr><th>Nombre</th><th>Cédula / Correo</th><th>Rol</th><th>Estado</th><th>Cursos Asignados</th><th>Acciones</th></tr>
                             </thead>
                             <tbody>
                 `;
                 
                 if (students.length === 0) {
-                    html += `<tr><td colspan="5" class="text-center text-gray">No hay estudiantes</td></tr>`;
+                    html += `<tr><td colspan="6" class="text-center text-gray">No hay usuarios registrados</td></tr>`;
                 }
                 
                 students.forEach((student) => {
@@ -908,11 +909,15 @@
                     const statusBadge = student.active === false 
                         ? '<span class="badge badge-danger">Inactivo</span>' 
                         : '<span class="badge badge-success">Activo</span>';
+                    const roleBadge = student.role === "admin" 
+                        ? '<span class="badge badge-warning">Admin</span>' 
+                        : '<span class="badge badge-secondary">Estudiante</span>';
                         
                     html += `
                         <tr>
                             <td>${student.name}</td>
                             <td>${student.document}</td>
+                            <td>${roleBadge}</td>
                             <td>${statusBadge}</td>
                             <td><span class="badge badge-primary">${studentEnrollments} asignados</span></td>
                             <td>
@@ -953,7 +958,7 @@
                 }
                 
                 window.UI.showModal(`
-                    <h3 class="mb-4">${user ? "Editar Estudiante" : "Nuevo Estudiante"}</h3>
+                    <h3 class="mb-4">${user ? "Editar Usuario" : "Nuevo Usuario"}</h3>
                     <form onsubmit="event.preventDefault(); window.AdminViews.saveUser(this, ${userId ? `'${userId}'` : "null"})">
                         <div class="form-group">
                             <label>Nombre</label>
@@ -972,6 +977,13 @@
                             <input type="password" name="password" class="form-control" ${user ? "" : "required"}>
                         </div>
                         ${user ? `
+                            <div class="form-group">
+                                <label>Rol en Plataforma</label>
+                                <select name="role" class="form-control">
+                                    <option value="student" ${user.role !== "admin" ? "selected" : ""}>Estudiante</option>
+                                    <option value="admin" ${user.role === "admin" ? "selected" : ""}>Administrador</option>
+                                </select>
+                            </div>
                             <div class="form-group">
                                 <label>Estado</label>
                                 <select name="active" class="form-control">
@@ -997,17 +1009,12 @@
                 
                 if (formEl.elements.active) data.active = formEl.elements.active.value === "true";
                 if (formEl.elements.password.value.trim() !== "") data.password = formEl.elements.password.value;
+                if (formEl.elements.role) data.role = formEl.elements.role.value;
+                else data.role = "student";
                 
                 const existingUser = window.DB.get("users").find((u) => u.document === data.document);
                 if (existingUser && String(existingUser.id) !== String(userId)) {
                     return window.UI.showAlert("La cédula ya está registrada.");
-                }
-                
-                if (userId && userId !== "null") {
-                    const oldUser = window.DB.get("users").find((u) => String(u.id) === String(userId));
-                    data.role = (oldUser && oldUser.role) ? oldUser.role : "student";
-                } else {
-                    data.role = "student";
                 }
                 
                 let targetUserId = userId;
@@ -1644,7 +1651,7 @@
                 window.UI.showModal(`
                     <h3 class="mb-4">Detalle del Examen</h3>
                     <p class="mb-2"><strong>Puntaje Obtenido:</strong> <span class="font-bold text-primary">${recentResult.score}%</span></p>
-                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentation:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
+                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentación:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
                     <div style="max-height: 400px; overflow-y: auto; padding-right:10px;">
                         ${detailsHtml}
                     </div>
