@@ -945,9 +945,13 @@
             openEditUserModal: function(userId = null) {
                 const user = userId ? window.DB.get("users").find((u) => String(u.id) === String(userId)) : null;
                 const courses = window.DB.get("courses");
-                const userEnrollments = window.DB.get("enrollments")
-                    .filter((e) => String(e.studentId) === String(userId))
-                    .map((e) => String(e.courseId));
+                
+                // FIX: Validar que el userId exista y no sea la palabra "null" para buscar asignaciones previas
+                const userEnrollments = (userId && userId !== "null")
+                    ? window.DB.get("enrollments")
+                        .filter((e) => String(e.studentId) === String(userId))
+                        .map((e) => String(e.courseId))
+                    : [];
                     
                 let coursesHtml = "";
                 if (courses.length > 0) {
@@ -1031,15 +1035,24 @@
                     window.DB.update("users", userId, data);
                 } else {
                     const newUser = window.DB.add("users", data);
-                    targetUserId = newUser.id;
+                    // FIX: Asegurar la correcta captura del ID del estudiante recién creado
+                    targetUserId = newUser.id || data.id;
                 }
                 
-                const selectedCourses = Array.from(formEl.querySelectorAll('input[name="assign_courses"]:checked')).map(el => String(el.value));
-                const currentEnrollments = window.DB.get("enrollments").filter(e => String(e.studentId) === String(targetUserId));
+                // FIX: Asegurar que el ID sea estrictamente un string
+                const safeStudentId = String(targetUserId);
+                
+                // FIX: Extracción robusta de los cursos seleccionados
+                const selectedCourses = [];
+                formEl.querySelectorAll('input[name="assign_courses"]').forEach(cb => {
+                    if (cb.checked) selectedCourses.push(String(cb.value));
+                });
+                
+                const currentEnrollments = window.DB.get("enrollments").filter(e => String(e.studentId) === safeStudentId);
                 
                 selectedCourses.forEach((courseId) => {
                     if (!currentEnrollments.find(e => String(e.courseId) === String(courseId))) {
-                        window.DB.add("enrollments", { studentId: String(targetUserId), courseId: String(courseId) });
+                        window.DB.add("enrollments", { studentId: safeStudentId, courseId: String(courseId) });
                     }
                 });
                 
