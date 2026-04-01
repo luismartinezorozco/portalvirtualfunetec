@@ -40,12 +40,14 @@
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
         .justify-center { justify-content: center; }
+        .gap-1 { gap: 0.25rem; }
         .gap-2 { gap: 0.5rem; }
         .gap-3 { gap: 0.75rem; }
         .gap-4 { gap: 1rem; }
         .p-4 { padding: 1rem; }
         .p-6 { padding: 1.5rem; }
         .m-0 { margin: 0 !important; }
+        .mt-2 { margin-top: 0.5rem; }
         .mt-4 { margin-top: 1rem; }
         .mb-2 { margin-bottom: 0.5rem; }
         .mb-4 { margin-bottom: 1rem; }
@@ -132,10 +134,11 @@
         
         .login-wrapper { display: flex; min-height: 100vh; width: 100%; background: var(--bg); }
         .login-form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; background: var(--bg); }
-        .login-box { background: var(--white); padding: 3rem 2.5rem; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); width: 100%; max-width: 440px; border: 1px solid var(--border); }
+        .login-box { background: var(--white); padding: 3rem 2.5rem; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); width: 100%; max-width: 440px; border: 1px solid var(--border); }
         .login-header { text-align: center; margin-bottom: 2.5rem; }
 
         @keyframes fadeInLogin { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUpModal { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .fade-in { animation: fadeInLogin 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
 
         .app-layout { display: flex; height: 100vh; overflow: hidden; position: relative; width: 100%; }
@@ -204,12 +207,19 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; backdrop-filter: blur(4px); }
         .modal-content { background: var(--white); padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: fadeInLogin 0.3s ease-out; }
 
+        /* Responsive Utilities */
+        @media (min-width: 640px) {
+            .sm\:w-auto { width: auto !important; }
+            .sm\:max-w-lg { max-width: 32rem !important; }
+        }
+
         @media (max-width: 992px) {
             .course-view-layout { grid-template-columns: 1fr; }
             .course-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
             .action-grid.cols-3, .action-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
             .content-list { max-height: none !important; }
         }
+
         @media (max-width: 768px) {
             html { font-size: 14px; }
             .login-form-panel { padding: 1.5rem; align-items: center; }
@@ -221,16 +231,21 @@
             #topbar-title { font-size: 1.1rem; flex: 1; text-align: left; padding: 0 0.5rem; display: none; }
             .content-area { padding: 1.25rem; }
             .card { padding: 1.25rem; }
-            .modal-content { padding: 1.5rem; width: 100%; margin: 0; border-radius: 12px; }
-            .modal-overlay { padding: 0.5rem; }
+            
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal-content { padding: 1.5rem; width: 100%; margin: 0; border-radius: 20px 20px 0 0; border: none; animation: slideUpModal 0.3s ease-out forwards; }
         }
+
         @media (max-width: 480px) {
             .course-grid { grid-template-columns: 1fr; gap: 1rem; }
             .action-grid.cols-2, .action-grid.cols-3, .action-grid.cols-4 { grid-template-columns: 1fr; gap: 8px; }
             .btn-card { padding: 12px; min-height: 60px; font-size: 0.95rem; flex-direction: row; justify-content: center; gap: 10px; }
+            
             .mobile-stack { flex-direction: column !important; align-items: stretch !important; width: 100%; gap: 12px; }
             .mobile-stack > * { width: 100% !important; max-width: 100% !important; margin: 0 !important; }
+            
             .notification-dropdown { left: 0; right: 0; width: 100%; border-radius: 0 0 16px 16px; border-left: none; border-right: none; }
+            .modal-content { padding: 1.25rem; }
         }
     </style>
 </head>
@@ -406,11 +421,6 @@
             menu: _svg('<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>'),
             play: _svg('<polygon points="5 3 19 12 5 21 5 3"/>'),
             settings: _svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
-            save: _svg('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>'),
-            cancel: _svg('<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'),
-            eye: _svg('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'),
-            clock: _svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
-            list: _svg('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'),
             download: _svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>')
         };
 
@@ -801,9 +811,9 @@
                             <label>Nueva Contraseña</label>
                             <input type="password" name="newPassword" class="form-control" required minlength="6">
                         </div>
-                        <div class="flex justify-between mt-4">
-                            <button type="button" class="btn btn-secondary" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
-                            <button type="submit" class="btn btn-primary">${window.Icons.save} Guardar Cambios</button>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">${window.Icons.save} Guardar</button>
                         </div>
                     </form>
                 `);
@@ -862,7 +872,7 @@
                                     <td>${course.name}</td>
                                     <td>${progress.intentos || 1}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-success" onclick="window.AdminViews.authorizeExam('${progress.id}', '${student.id}')">
+                                        <button class="btn btn-sm btn-success w-full sm:w-auto" onclick="window.AdminViews.authorizeExam('${progress.id}', '${student.id}')">
                                             ${window.Icons.check} Autorizar Intento
                                         </button>
                                     </td>
@@ -889,7 +899,7 @@
                         <h3 class="m-0">Gestión de Usuarios</h3>
                         <div class="flex gap-2 w-full sm:w-auto">
                             <input type="text" class="form-control" placeholder="Buscar usuario..." onkeyup="window.UIHelpers.filterTable(this, 'users-table')">
-                            <button class="btn btn-primary whitespace-nowrap" onclick="window.AdminViews.openEditUserModal()">${window.Icons.plus} Nuevo</button>
+                            <button class="btn btn-primary w-full sm:w-auto whitespace-nowrap" onclick="window.AdminViews.openEditUserModal()">${window.Icons.plus} Nuevo</button>
                         </div>
                     </div>
                     <div class="card table-responsive">
@@ -922,7 +932,7 @@
                             <td><span class="badge badge-primary">${studentEnrollments} asignados</span></td>
                             <td>
                                 <div class="flex gap-2">
-                                    <button class="btn btn-outline btn-sm" onclick="window.AdminViews.openEditUserModal('${student.id}')" title="Editar Estudiante">${window.Icons.edit} Editar</button>
+                                    <button class="btn btn-outline btn-sm flex-1 sm:flex-none" onclick="window.AdminViews.openEditUserModal('${student.id}')" title="Editar Estudiante">${window.Icons.edit} Editar</button>
                                     <button class="btn btn-danger btn-sm" onclick="window.AdminViews.confirmDeleteUser('${student.id}')" title="Eliminar Estudiante">${window.Icons.trash}</button>
                                 </div>
                             </td>
@@ -993,9 +1003,9 @@
                             </div>
                         ` : ""}
                         ${coursesHtml}
-                        <div class="flex justify-between mt-4">
-                            <button type="button" class="btn btn-secondary" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
-                            <button type="submit" class="btn btn-primary">${window.Icons.save} Guardar</button>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">${window.Icons.save} Guardar</button>
                         </div>
                     </form>
                 `);
@@ -1074,7 +1084,7 @@
                         <h3 class="m-0">Gestión de Cursos</h3>
                         <div class="flex gap-2 w-full sm:w-auto">
                             <input type="text" class="form-control flex-1" placeholder="Buscar curso..." onkeyup="window.UIHelpers.filterGrid(this, 'admin-courses-grid')">
-                            <button class="btn btn-primary whitespace-nowrap" onclick="window.AdminViews.openCourseModal()">${window.Icons.plus} Crear Curso</button>
+                            <button class="btn btn-primary w-full sm:w-auto whitespace-nowrap" onclick="window.AdminViews.openCourseModal()">${window.Icons.plus} Crear Curso</button>
                         </div>
                     </div>
                     <div class="course-grid" id="admin-courses-grid">
@@ -1161,9 +1171,9 @@
                                 <img id="image-preview" src="${existingImgUrl}" class="w-full mt-2 rounded" style="height:160px; object-fit: cover;">
                             </div>
                         </div>
-                        <div class="flex justify-between mt-4">
-                            <button type="button" class="btn btn-secondary" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
-                            <button type="submit" class="btn btn-primary" id="save-course-btn">${window.Icons.save} Guardar</button>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto" id="save-course-btn">${window.Icons.save} Guardar</button>
                         </div>
                     </form>
                 `);
@@ -1264,15 +1274,15 @@
                 const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
                 
                 let html = `
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-4 mobile-stack">
                         <h3 class="truncate" style="max-width: 60%;">Curso: ${course.name}</h3>
-                        <button class="btn btn-secondary" onclick="window.Router.navigate('admin-courses')">${window.Icons.back} Volver</button>
+                        <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('admin-courses')">${window.Icons.back} Volver</button>
                     </div>
                     <div class="course-view-layout">
                         <div class="card" style="overflow-x:hidden;">
                             <div class="flex justify-between items-center mb-4 mobile-stack">
                                 <h4>Contenido del Curso</h4>
-                                <button class="btn btn-primary" onclick="window.AdminViews.openContentModal('${courseId}')">${window.Icons.plus} Agregar Módulo</button>
+                                <button class="btn btn-primary w-full sm:w-auto" onclick="window.AdminViews.openContentModal('${courseId}')">${window.Icons.plus} Agregar Módulo</button>
                             </div>
                             <div class="content-list">
                 `;
@@ -1334,9 +1344,9 @@
                             <label>URL del recurso</label>
                             <input type="url" name="url" class="form-control" value="${content?.url || ""}" required placeholder="https://www.youtube.com/watch?v=...">
                         </div>
-                        <div class="flex justify-between mt-4">
-                            <button type="button" class="btn btn-secondary" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
-                            <button type="submit" class="btn btn-primary">${window.Icons.save} Guardar</button>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">${window.Icons.save} Guardar</button>
                         </div>
                     </form>
                 `);
@@ -1390,9 +1400,9 @@
                             </div>
                             <input type="text" class="form-control mb-3" value="${q.q}" onchange="window.tempExam.questions[${idx}].q = this.value" placeholder="Texto de la pregunta" required>
                             ${q.options.map((opt, optIdx) => `
-                                <div class="flex items-center gap-3 mb-2">
+                                <div class="flex items-center gap-3 mb-2 flex-wrap">
                                     <input type="radio" name="correct_${idx}" ${q.correctIdx === optIdx ? "checked" : ""} onchange="window.tempExam.questions[${idx}].correctIdx = ${optIdx}" required style="transform:scale(1.2);">
-                                    <input type="text" class="form-control" value="${opt}" onchange="window.tempExam.questions[${idx}].options[${optIdx}] = this.value" placeholder="Opción ${optIdx + 1}" required>
+                                    <input type="text" class="form-control flex-1 min-w-[200px]" value="${opt}" onchange="window.tempExam.questions[${idx}].options[${optIdx}] = this.value" placeholder="Opción ${optIdx + 1}" required>
                                 </div>
                             `).join("")}
                         </div>
@@ -1407,9 +1417,9 @@
                             </div>
                             <div id="questions-container">${questionsHtml}</div>
                             <button type="button" class="btn btn-outline w-full mb-4" onclick="window.AdminViews.addTempQuestion()">${window.Icons.plus} Agregar Pregunta</button>
-                            <div class="flex justify-between">
-                                <button type="button" class="btn btn-secondary" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
-                                <button type="submit" class="btn btn-primary">${window.Icons.save} Guardar Examen</button>
+                            <div class="flex justify-between flex-wrap gap-2">
+                                <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
+                                <button type="submit" class="btn btn-primary w-full sm:w-auto">${window.Icons.save} Guardar Examen</button>
                             </div>
                         </form>
                     `;
@@ -1496,23 +1506,23 @@
                             <div>
                                 <label class="text-xs text-primary font-bold">FIRMAS (Imágenes PNG sin fondo)</label>
                                 <div class="flex gap-2 mb-2 items-center flex-wrap">
-                                    <div class="flex-1 w-full min-w-[200px]">
+                                    <div class="flex-1 w-full" style="min-width: 200px;">
                                         <input type="file" name="f1file" class="form-control mb-1" accept="image/png, image/jpeg">
                                         <input type="hidden" name="f1img" value="${val('f1img') || ''}">
                                         ${val('f1img') ? `<img src="${val('f1img')}" style="height:40px; object-fit:contain;">` : ''}
                                     </div>
-                                    <div class="flex-1 flex gap-2 w-full min-w-[200px]">
+                                    <div class="flex-1 flex gap-2 w-full" style="min-width: 200px;">
                                         <input type="text" name="f1n" class="form-control" value="${val('f1n')}" placeholder="Nombre 1">
                                         <input type="text" name="f1r" class="form-control" value="${val('f1r')}" placeholder="Cargo 1">
                                     </div>
                                 </div>
                                 <div class="flex gap-2 items-center flex-wrap mt-4">
-                                    <div class="flex-1 w-full min-w-[200px]">
+                                    <div class="flex-1 w-full" style="min-width: 200px;">
                                         <input type="file" name="f2file" class="form-control mb-1" accept="image/png, image/jpeg">
                                         <input type="hidden" name="f2img" value="${val('f2img') || ''}">
                                         ${val('f2img') ? `<img src="${val('f2img')}" style="height:40px; object-fit:contain;">` : ''}
                                     </div>
-                                    <div class="flex-1 flex gap-2 w-full min-w-[200px]">
+                                    <div class="flex-1 flex gap-2 w-full" style="min-width: 200px;">
                                         <input type="text" name="f2n" class="form-control" value="${val('f2n')}" placeholder="Nombre 2">
                                         <input type="text" name="f2r" class="form-control" value="${val('f2r')}" placeholder="Cargo 2">
                                     </div>
@@ -1522,15 +1532,15 @@
                             <div>
                                 <label class="text-xs text-primary font-bold">PIE DE PÁGINA (CONTACTO)</label>
                                 <div class="flex gap-2 flex-wrap">
-                                    <input type="text" name="ft1" class="form-control flex-1 min-w-[150px]" value="${val('ft1')}" placeholder="Email">
-                                    <input type="text" name="ft2" class="form-control flex-1 min-w-[150px]" value="${val('ft2')}" placeholder="Dirección">
-                                    <input type="text" name="ft3" class="form-control flex-1 min-w-[150px]" value="${val('ft3')}" placeholder="Teléfono">
+                                    <input type="text" name="ft1" class="form-control flex-1" style="min-width: 150px;" value="${val('ft1')}" placeholder="Email">
+                                    <input type="text" name="ft2" class="form-control flex-1" style="min-width: 150px;" value="${val('ft2')}" placeholder="Dirección">
+                                    <input type="text" name="ft3" class="form-control flex-1" style="min-width: 150px;" value="${val('ft3')}" placeholder="Teléfono">
                                 </div>
                             </div>
                         </div>
-                        <div class="flex justify-between mt-4 pt-4 border-t">
-                            <button type="button" class="btn btn-secondary" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
-                            <button type="submit" class="btn btn-primary" id="save-cfg-btn">${window.Icons.save} Guardar</button>
+                        <div class="flex justify-between mt-4 pt-4 border-t flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto" id="save-cfg-btn">${window.Icons.save} Guardar</button>
                         </div>
                     </form>
                 `);
@@ -1584,7 +1594,7 @@
                             <h3 class="m-0">Certificados y Resultados</h3>
                             <button class="btn btn-outline btn-sm" onclick="window.AdminViews.openCertConfigModal()">${window.Icons.settings} Diseño PDF</button>
                         </div>
-                        <input type="text" class="form-control flex-1 max-w-lg" placeholder="Buscar por estudiante o curso..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
+                        <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
                     </div>
                     <div class="card table-responsive">
                         <table id="admin-certs-table">
@@ -1683,9 +1693,9 @@
                             <label>Fecha de Emisión</label>
                             <input type="date" name="date" class="form-control" value="${dateToShow}" required>
                         </div>
-                        <div class="flex justify-between mt-4">
-                            <button type="button" class="btn btn-secondary" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
-                            <button type="submit" class="btn btn-primary">${window.Icons.save} Guardar</button>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">${window.Icons.cancel} Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">${window.Icons.save} Guardar</button>
                         </div>
                     </form>
                 `);
