@@ -700,14 +700,14 @@
                 if (!nav) return;
                 let html = window.State.currentUser.role === "admin" 
                     ? `
-                        <a class="nav-item" onclick="window.Router.navigate('admin-dashboard')">${window.Icons.dashboard} Dashboard</a>
-                        <a class="nav-item" onclick="window.Router.navigate('admin-users')">${window.Icons.users} Usuarios y Asignaciones</a>
-                        <a class="nav-item" onclick="window.Router.navigate('admin-courses')">${window.Icons.book} Cursos y Contenido</a>
-                        <a class="nav-item" onclick="window.Router.navigate('admin-certs')">${window.Icons.award} Certificados y Resultados</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-dashboard')">Dashboard</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-users')">Usuarios y Asignaciones</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-courses')">Cursos y Contenido</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-certs')">Certificados y Resultados</a>
                     ` 
                     : `
-                        <a class="nav-item" onclick="window.Router.navigate('student-dashboard')">${window.Icons.book} Mis Cursos</a>
-                        <a class="nav-item" onclick="window.Router.navigate('student-certs')">${window.Icons.award} Mis Certificados</a>
+                        <a class="nav-item" onclick="window.Router.navigate('student-dashboard')">Mis Cursos</a>
+                        <a class="nav-item" onclick="window.Router.navigate('student-certs')">Mis Certificados</a>
                     `;
                 nav.innerHTML = html;
             }
@@ -1055,7 +1055,6 @@
             confirmDeleteUser: function(userId) {
                 window.UI.showModal(`
                     <div class="text-center p-4">
-                        <svg class="icon mx-auto mb-4 text-danger" style="width: 50px; height:50px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                         <h3 class="mb-2 text-danger font-bold text-xl">¡Advertencia Crítica!</h3>
                         <p class="mb-4 text-gray">¿Eliminar estudiante completamente del sistema? Esto borrará sus progresos y certificados de forma permanente.</p>
                         <div class="flex justify-center gap-4 mt-6 mobile-stack">
@@ -1892,7 +1891,6 @@
                                     <div class="content-item ${currentContent && String(currentContent.id) === String(c.id) ? "active" : ""} ${isCompleted ? "completed" : ""}"
                                          onclick="window.StudentViews.changeContent('${courseId}', '${c.id}', event)">
                                         <span class="title">${idx + 1}. ${c.title}</span>
-                                        ${isCompleted ? `<span class="flex text-success">${window.Icons.check}</span>` : ""}
                                     </div>
                                 `;
                             }).join("")}
@@ -1923,7 +1921,6 @@
                             <div class="video-wrapper" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0\\' allow=\\'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\\' allowfullscreen></iframe>'; this.style.cursor='default';">
                                 <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" class="video-thumbnail" alt="Video Thumbnail" onerror="this.src='https://img.youtube.com/vi/${videoId}/hqdefault.jpg'">
                                 <div class="video-overlay-main"></div>
-                                <div class="play-button">${window.Icons.play}</div>
                             </div>
                         `;
                     }
@@ -2283,12 +2280,13 @@
                     T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
                     T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
 
-                    // Footer
-                    pdf.setFillColor(225, 29, 42); 
-                    [[45, val('ft1')], [120, val('ft2')], [215, val('ft3')]].forEach(f => {
-                        pdf.circle(f[0], 198, 2.5, 'F');
-                        T(f[1], 199.5, 9, "helvetica", "bold", 50, f[0]+5, "left");
-                    });
+                    // Footer (Solo texto como solicitaste, para no sobrecargar)
+                    pdf.setTextColor(50, 50, 50);
+                    pdf.setFont("helvetica", "bold");
+                    pdf.setFontSize(10); 
+                    pdf.text(val('ft1'), 40, 199.5, { align: "left" });
+                    pdf.text(val('ft2'), cX, 199.5, { align: "center" });
+                    pdf.text(val('ft3'), 257, 199.5, { align: "right" });
 
                     pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
                     window.UI.closeModal();
