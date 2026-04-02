@@ -2277,8 +2277,9 @@
                     getB64(val('f2img')),
                     getB64('https://image2url.com/r2/default/images/1775071648590-9b1104bf-6774-470c-bcb6-9672d743f144.png'), // email icon
                     getB64('https://image2url.com/r2/default/images/1775071789052-124cd7a8-b4d7-4cc4-be4b-292c9219cfa1.avif'), // map icon
-                    getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg')  // phone icon
-                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon]) => {
+                    getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg'),  // phone icon
+                    getB64('https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg')   // Logo principal
+                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon, mainLogo]) => {
                     const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
                     const cX = 148.5; 
                     
@@ -2288,10 +2289,14 @@
                     };
 
                     // Logo
-                    pdf.setFillColor(153, 27, 27); pdf.rect(cX-10, 15, 5, 18, 'F');
-                    pdf.setFillColor(225, 29, 42); pdf.rect(cX-3, 10, 5, 23, 'F');
-                    pdf.setFillColor(252, 165, 165); pdf.rect(cX+4, 15, 5, 18, 'F');
-                    T("FUNETEC", 38, 12, "helvetica", "bold");
+                    if (mainLogo) {
+                        pdf.addImage(mainLogo, "PNG", cX - 17.5, 8, 35, 35);
+                    } else {
+                        pdf.setFillColor(153, 27, 27); pdf.rect(cX-10, 15, 5, 18, 'F');
+                        pdf.setFillColor(225, 29, 42); pdf.rect(cX-3, 10, 5, 23, 'F');
+                        pdf.setFillColor(252, 165, 165); pdf.rect(cX+4, 15, 5, 18, 'F');
+                        T("FUNETEC", 38, 12, "helvetica", "bold");
+                    }
 
                     // Textos principales
                     T(val('h1'), 55, 26, "times", "bold");
