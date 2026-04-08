@@ -1602,6 +1602,37 @@
                     if(btn) { btn.disabled = false; btn.innerHTML = "Guardar"; }
                 }
             },
+            exportCertsData: function() {
+                const certs = window.DB.get("certificates");
+                const users = window.DB.get("users");
+                const courses = window.DB.get("courses");
+
+                let csvStr = "Nombre del Estudiante,Cedula,Nombre del Curso,Estado\n";
+
+                certs.forEach(cert => {
+                    const student = users.find(u => String(u.id) === String(cert.studentId));
+                    const course = courses.find(c => String(c.id) === String(cert.courseId));
+
+                    if (student && course) {
+                        const name = `"${student.name.replace(/"/g, '""')}"`;
+                        const doc = `"${student.document.replace(/"/g, '""')}"`;
+                        const courseName = `"${course.name.replace(/"/g, '""')}"`;
+                        let statusText = cert.status === "approved" ? "Aprobado" : (cert.status === "rejected" ? "Rechazado" : "Pendiente");
+
+                        csvStr += `${name},${doc},${courseName},${statusText}\n`;
+                    }
+                });
+
+                // Añadir BOM (Byte Order Mark) para forzar UTF-8 y que Excel lea correctamente los acentos y las eñes
+                const blob = new Blob(["\uFEFF" + csvStr], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "reporte_certificados_funetec.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
             renderCerts: function(container) {
                 const certs = window.DB.get("certificates");
                 const users = window.DB.get("users");
@@ -1609,9 +1640,10 @@
                 
                 let html = `
                     <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <h3 class="m-0">Certificados y Resultados</h3>
                             <button class="btn btn-outline btn-sm" onclick="window.AdminViews.openCertConfigModal()">Diseño PDF</button>
+                            <button class="btn btn-success btn-sm" onclick="window.AdminViews.exportCertsData()">Exportar CSV</button>
                         </div>
                         <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar por estudiante o curso..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
                     </div>
