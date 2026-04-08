@@ -1,0 +1,2435 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>FUNETEC - Plataforma Virtual</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #e11d2a;
+            --primary-dark: #991b1b;
+            --primary-light: #fca5a5;
+            --bg: #f9fafb;
+            --text: #111827;
+            --gray: #6b7280;
+            --border: #e5e7eb;
+            --white: #ffffff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --sidebar-width: 260px;
+            --header-height: 64px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; scroll-behavior: smooth; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.5; overflow-x: hidden; width: 100%; min-height: 100vh; }
+        iframe, img, picture, video { display: block; max-width: 100%; height: auto; }
+        svg { max-width: 100%; }
+        
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { display: flex; flex-direction: column; }
+        .flex-1 { flex: 1; min-width: 0; }
+        .flex-wrap { flex-wrap: wrap; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .m-0 { margin: 0 !important; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .w-full { width: 100%; }
+        .max-w-lg { max-width: 32rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-gray { color: var(--gray); }
+        .text-primary { color: var(--primary); }
+        .text-success { color: var(--success); }
+        .text-warning { color: var(--warning); }
+        .text-danger { color: var(--danger); }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .whitespace-nowrap { white-space: nowrap; }
+        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        
+        /* Optimización Global de Iconos */
+        svg.icon { flex-shrink: 0 !important; display: inline-block !important; vertical-align: middle; width: 1.25rem; height: 1.25rem; transition: transform 0.2s ease; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 10px 16px; min-height: 44px; border: 1px solid transparent; border-radius: 10px; font-family: 'Inter', sans-serif; font-weight: 500; font-size: 1rem; text-align: center; cursor: pointer; transition: 0.3s ease; text-decoration: none; user-select: none; max-width: 100%; }
+        .btn:hover .icon { transform: scale(1.15); }
+        .btn:active:not(:disabled) { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+        
+        .btn-sm { padding: 8px 12px; min-height: 38px; font-size: 0.875rem; border-radius: 8px; }
+        .btn-sm .icon { width: 1rem; height: 1rem; }
+        .btn-lg { padding: 12px 24px; min-height: 52px; font-size: 1.125rem; border-radius: 10px; }
+        .btn-lg .icon { width: 1.5rem; height: 1.5rem; }
+        
+        .btn-primary { background-color: var(--primary); color: var(--white); }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(225, 29, 42, 0.2); }
+        .btn-secondary { background-color: var(--gray); color: var(--white); }
+        .btn-secondary:hover:not(:disabled) { background-color: #4b5563; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(107, 114, 128, 0.2); }
+        .btn-success { background-color: var(--success); color: var(--white); }
+        .btn-success:hover:not(:disabled) { background-color: #059669; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(16, 185, 129, 0.2); }
+        .btn-danger { background-color: var(--danger); color: var(--white); }
+        .btn-danger:hover:not(:disabled) { background-color: #b91c1c; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(239, 68, 68, 0.2); }
+        .btn-outline { background-color: transparent; border-color: var(--primary); color: var(--primary); }
+        .btn-outline:hover:not(:disabled) { background-color: rgba(225, 29, 42, 0.05); transform: translateY(-2px); }
+
+        .action-grid { display: grid; gap: 12px; width: 100%; margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 1.25rem; }
+        .action-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+        .action-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .action-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .action-grid.cols-1 { grid-template-columns: 1fr; }
+
+        .btn-card { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 90px; color: var(--text); font-weight: 500; font-size: 0.9rem; text-align: center; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02); gap: 8px; word-break: break-word; }
+        .btn-card .icon { width: 1.5rem; height: 1.5rem; margin: 0; color: inherit; }
+        .btn-card.primary { color: var(--primary); border-color: rgba(225, 29, 42, 0.2); background-color: rgba(225, 29, 42, 0.02); }
+        .btn-card.danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.2); background-color: rgba(239, 68, 68, 0.02); }
+        .btn-card.success { color: var(--success); border-color: rgba(16, 185, 129, 0.2); background-color: rgba(16, 185, 129, 0.02); }
+        .btn-card.warning { color: var(--warning); border-color: rgba(245, 158, 11, 0.2); background-color: rgba(245, 158, 11, 0.02); }
+
+        @media (hover: hover) {
+            .btn-card:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 6px 12px -2px rgba(225, 29, 42, 0.08); transform: translateY(-2px); }
+            .btn-card:hover .icon { transform: scale(1.15); }
+        }
+        .btn-card:active { transform: scale(0.96); background-color: var(--bg); }
+
+        .form-group { margin-bottom: 1.25rem; width: 100%; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; color: var(--text); }
+        .form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; background-color: var(--white); font-size: 16px; transition: all 0.3s ease; min-height: 48px; color: var(--text); }
+        .form-control:focus { outline: 0; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(225, 29, 42, 0.1); }
+
+        .card { background: var(--white); border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); padding: 1.5rem; width: 100%; border: 1px solid var(--border); overflow: hidden; }
+
+        .table-responsive { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; min-width: 600px; }
+        td, th { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background-color: var(--bg); font-weight: 600; color: var(--gray); border-top: 1px solid var(--border); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em; }
+        tbody tr:hover { background-color: var(--bg); }
+
+        .badge { padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; white-space: nowrap; }
+        .badge-warning { background-color: #fef3c7; color: #92400e; }
+        .badge-success { background-color: #d1fae5; color: #065f46; }
+        .badge-danger { background-color: #fee2e2; color: #991b1b; }
+        .badge-primary { background-color: rgba(225, 29, 42, 0.1); color: var(--primary); }
+        .badge-secondary { background-color: var(--bg); color: var(--text); }
+
+        .logo-container { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; }
+        .logo-container img, .logo-container svg { height: 80px; width: 100px; object-fit: contain; flex-shrink: 0; }
+        
+        .login-wrapper { display: flex; min-height: 100vh; width: 100%; background: var(--bg); }
+        .login-form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; background: var(--bg); }
+        .login-box { background: var(--white); padding: 3rem 2.5rem; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); width: 100%; max-width: 440px; border: 1px solid var(--border); }
+        .login-header { text-align: center; margin-bottom: 2.5rem; }
+
+        @keyframes fadeInLogin { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUpModal { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .fade-in { animation: fadeInLogin 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+
+        .app-layout { display: flex; height: 100vh; overflow: hidden; position: relative; width: 100%; }
+        .sidebar { width: var(--sidebar-width); background-color: var(--white); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 30; flex-shrink: 0; }
+        .sidebar-header { height: var(--header-height); display: flex; align-items: center; padding: 0 1.5rem; border-bottom: 1px solid var(--border); }
+        .sidebar-header .logo-container { height: 100%; margin: 0; }
+        .sidebar-header .logo-container img, .sidebar-header .logo-container svg { height: 40px; width: 50px; }
+        
+        .sidebar-nav { flex: 1; padding: 1.5rem 0; overflow-y: auto; }
+        .nav-item { display: flex; align-items: center; padding: 10px 16px; color: var(--gray); text-decoration: none; transition: 0.3s; cursor: pointer; gap: 0.75rem; font-weight: 500; margin: 4px 12px; border-radius: 8px; }
+        .nav-item .icon { width: 22px; height: 22px; fill: none; stroke: currentColor; }
+        .nav-item:hover:not(.active) { background-color: var(--bg); }
+        .nav-item.active { background-color: rgba(225, 29, 42, 0.08); color: var(--primary); font-weight: 600; }
+        .nav-item.active .icon { transform: scale(1.1); color: var(--primary); }
+        
+        #sidebar-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 25; display: none; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(2px); }
+        #sidebar-overlay.show { display: block; opacity: 1; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; min-width: 0; background-color: var(--bg); }
+        .topbar { height: var(--header-height); background-color: var(--white); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; z-index: 10; gap: 1rem; }
+        .content-area { flex: 1; padding: 2rem; overflow-y: auto; overflow-x: hidden; width: 100%; }
+
+        .notification-btn, .profile-btn { position: relative; background: 0 0; border: none; border-radius: 8px; cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center; color: var(--text); min-height: 44px; }
+        .notification-btn .icon, .profile-btn .icon { width: 1.5rem; height: 1.5rem; }
+        .notification-btn:hover, .profile-btn:hover { background-color: var(--bg); }
+        .notification-btn:hover .icon, .profile-btn:hover .icon { transform: scale(1.1); }
+        
+        .mobile-menu-btn { background: 0 0; border: none; color: var(--text); cursor: pointer; position: relative; z-index: 1000; padding: 0.5rem; display: none; align-items: center; justify-content: center; min-height: 44px; }
+        .mobile-menu-btn .icon { width: 1.5rem; height: 1.5rem; }
+
+        .notification-badge { position: absolute; top: 4px; right: 4px; background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid var(--white); }
+        
+        .notification-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 340px; background: var(--white); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15); max-height: 400px; overflow-y: auto; display: none; z-index: 100; -webkit-overflow-scrolling: touch; }
+        .notification-dropdown.show { display: block; animation: fadeInLogin 0.2s ease-out forwards; }
+        .notif-item { padding: 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; transition: background 0.2s; word-break: break-word; line-height: 1.4; }
+        .notif-item:hover { background-color: var(--bg); }
+        .notif-item.unread { background-color: rgba(225, 29, 42, 0.04); border-left: 4px solid var(--primary); }
+
+        .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; width: 100%; }
+        .course-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--white); transition: transform 0.3s ease; display: flex; flex-direction: column; height: 100%; }
+        .course-card:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08); }
+        .course-img { height: 180px; background-color: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--gray); flex-shrink: 0; overflow: hidden; position: relative; }
+        .course-img img { width: 100%; height: 100%; object-fit: cover; }
+        .course-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+        .course-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--text); line-height: 1.3; }
+
+        .video-container { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; border: 1px solid var(--border); }
+        .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; overflow: hidden; background-color: #000; cursor: pointer; }
+        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .video-thumbnail { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; z-index: 1; }
+        .video-overlay-main { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.3); transition: background 0.3s ease; z-index: 2; }
+        .video-wrapper:hover .video-thumbnail { transform: scale(1.05); }
+        .video-wrapper:hover .video-overlay-main { background: rgba(0, 0, 0, 0.1); }
+        .play-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; width: 68px; height: 48px; background-color: rgba(225, 29, 42, 0.9); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(225, 29, 42, 0.3); }
+        .play-button svg { width: 24px; height: 24px; fill: white; stroke: white; margin-left: 4px; }
+        .video-wrapper:hover .play-button { background-color: var(--primary-dark); transform: translate(-50%, -50%) scale(1.08); }
+
+        .course-view-layout { display: grid; grid-template-columns: 3fr 1fr; gap: 2rem; align-items: start; }
+        .content-list { border: 1px solid var(--border); border-radius: 12px; background: var(--white); overflow: hidden; }
+        .content-item { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; word-break: break-word; transition: background 0.2s; font-weight: 500; gap: 0.5rem; }
+        .content-item:hover { background-color: var(--bg); }
+        .content-item.active { background-color: rgba(225, 29, 42, 0.05); border-left: 4px solid var(--primary); color: var(--primary); }
+        .content-item.completed .title { text-decoration: line-through; color: var(--gray); font-weight: 400; }
+        .content-item .title { flex: 1; }
+
+        .progress-container { width: 100%; background-color: var(--border); border-radius: 999px; height: 12px; margin: 1rem 0; overflow: hidden; }
+        .progress-bar { height: 100%; background-color: var(--success); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--white); padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: fadeInLogin 0.3s ease-out; }
+
+        /* Responsive Utilities */
+        @media (min-width: 640px) {
+            .sm\:w-auto { width: auto !important; }
+            .sm\:max-w-lg { max-width: 32rem !important; }
+            .sm\:flex-none { flex: none !important; }
+        }
+
+        @media (max-width: 992px) {
+            .course-view-layout { grid-template-columns: 1fr; }
+            .course-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+            .action-grid.cols-3, .action-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+            .content-list { max-height: none !important; }
+        }
+
+        @media (max-width: 768px) {
+            html { font-size: 14px; }
+            .login-form-panel { padding: 1.5rem; align-items: center; }
+            .login-box { padding: 2rem 1.5rem; width: 100%; }
+            .sidebar { position: fixed; transform: translateX(-100%); height: 100vh; top: 0; left: 0; box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15); }
+            .sidebar.open { transform: translateX(0); }
+            .mobile-menu-btn { display: flex !important; }
+            .topbar { padding: 0 1rem; }
+            #topbar-title { font-size: 1.1rem; flex: 1; text-align: left; padding: 0 0.5rem; display: none; }
+            .content-area { padding: 1.25rem; }
+            .card { padding: 1.25rem; }
+            
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal-content { padding: 1.5rem; width: 100%; margin: 0; border-radius: 20px 20px 0 0; border: none; animation: slideUpModal 0.3s ease-out forwards; }
+            
+            .notification-dropdown { position: fixed; top: 72px; right: 1rem; left: 1rem; width: auto; max-height: calc(100vh - 90px); }
+        }
+
+        @media (max-width: 480px) {
+            .course-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .action-grid.cols-2, .action-grid.cols-3, .action-grid.cols-4 { grid-template-columns: 1fr; gap: 8px; }
+            .btn-card { padding: 12px; min-height: 60px; font-size: 0.95rem; flex-direction: row; justify-content: center; gap: 10px; }
+            
+            .mobile-stack { flex-direction: column !important; align-items: stretch !important; width: 100%; gap: 12px; }
+            .mobile-stack > * { width: 100% !important; max-width: 100% !important; margin: 0 !important; }
+            
+            .modal-content { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="login-view" class="login-wrapper">
+        <div class="login-form-panel">
+            <div class="login-box fade-in">
+                <div class="login-header">
+                    <div class="logo-container">
+                        <svg viewBox="0 0 150 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(10, 0)">
+                                <rect x="0" y="10" width="35" height="80" rx="8" fill="var(--primary-dark)" />
+                                <rect x="0" y="50" width="35" height="40" fill="var(--primary-dark)" />
+                                <rect x="45" y="35" width="35" height="55" rx="8" fill="var(--primary)" />
+                                <rect x="45" y="60" width="35" height="30" fill="var(--primary)" />
+                                <rect x="90" y="10" width="35" height="80" rx="8" fill="var(--primary-light)" />
+                                <rect x="90" y="50" width="35" height="40" fill="var(--primary-light)" />
+                            </g>
+                            <text x="75" y="115" font-family="'Inter', sans-serif" font-weight="900" font-size="22" fill="var(--text)" text-anchor="middle" letter-spacing="1">
+                                FUNETEC
+                            </text>
+                        </svg>
+                    </div>
+                    <p class="text-gray mt-4 font-bold">Sistema de Gestión de Aprendizaje</p>
+                    <p id="loading-db" class="text-primary mt-4 hidden font-bold text-center">Conectando con Firebase...</p>
+                </div>
+                
+                <div id="login-error" class="hidden text-danger text-center mb-4 font-semibold text-sm"></div>
+                
+                <form id="login-form" class="hidden">
+                    <div class="form-group">
+                        <label for="login-document">Número de Cédula o Correo</label>
+                        <input id="login-document" class="form-control" required placeholder="Ej: admin@funetec.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Contraseña</label>
+                        <input type="password" id="login-password" class="form-control" required placeholder="Ingresa tu contraseña">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
+                        Ingresar a la Plataforma
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-view" class="app-layout hidden">
+        <div id="sidebar-overlay" onclick="window.App.toggleSidebar()"></div>
+        
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header justify-center" style="padding-top:10px">
+                <div class="logo-container">
+                    <svg viewBox="0 0 150 120" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(10, 0)">
+                            <rect x="0" y="10" width="35" height="80" rx="8" fill="var(--primary-dark)" />
+                            <rect x="0" y="50" width="35" height="40" fill="var(--primary-dark)" />
+                            <rect x="45" y="35" width="35" height="55" rx="8" fill="var(--primary)" />
+                            <rect x="45" y="60" width="35" height="30" fill="var(--primary)" />
+                            <rect x="90" y="10" width="35" height="80" rx="8" fill="var(--primary-light)" />
+                            <rect x="90" y="50" width="35" height="40" fill="var(--primary-light)" />
+                        </g>
+                        <text x="75" y="115" font-family="'Inter', sans-serif" font-weight="900" font-size="22" fill="var(--text)" text-anchor="middle" letter-spacing="1">
+                            FUNETEC
+                        </text>
+                    </svg>
+                </div>
+            </div>
+            <nav id="sidebar-nav" class="sidebar-nav"></nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="flex items-center gap-2 flex-1">
+                    <button class="mobile-menu-btn" onclick="window.App.toggleSidebar()" id="mobile-menu-btn-container"></button>
+                    <h2 id="topbar-title" class="font-bold truncate" style="font-size: 1.25rem;">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <div style="position:relative">
+                        <button class="notification-btn" onclick="window.toggleNotifications()">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                            <span id="notif-badge" class="notification-badge hidden">0</span>
+                        </button>
+                        <div id="notif-dropdown" class="notification-dropdown">
+                            <div class="flex justify-between items-center font-bold p-4 border-b">
+                                Notificaciones
+                                <span class="text-xs text-primary cursor-pointer" onclick="window.markAllNotifRead()">Marcar leídas</span>
+                            </div>
+                            <div id="notif-list"></div>
+                        </div>
+                    </div>
+                    <button class="profile-btn" onclick="window.AdminViews.openProfileModal()" id="profile-btn-container" title="Mi Perfil" style="display:none">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4" /></svg>
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="window.Auth.logout()" id="logout-btn-container"></button>
+                </div>
+            </header>
+            <div id="main-content-area" class="content-area fade-in"></div>
+        </main>
+    </div>
+    
+    <div id="modal-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        window.State = { currentUser: null };
+        window.currentRoute = { id: null, params: {} };
+        
+        const cache = { 
+            users: [], courses: [], enrollments: [], contents: [], 
+            exams: [], progress: [], certificates: [], notifications: [], 
+            exam_results: [], cert_config: []
+        };
+        
+        window.dbInitialized = false;
+
+        window.SafeStorage = {
+            memory: {},
+            getItem: function(key) {
+                try { return window.localStorage.getItem(key); } catch (e) { return this.memory[key] || null; }
+            },
+            setItem: function(key, value) {
+                try { window.localStorage.setItem(key, value); } catch (e) { this.memory[key] = value; }
+            },
+            removeItem: function(key) {
+                try { window.localStorage.removeItem(key); } catch (e) { delete this.memory[key]; }
+            }
+        };
+
+        let firebaseConfig = {
+            apiKey: "AIzaSyBYi72zWTMCttqqx45jjhCX3aR5ts6VyCk",
+            authDomain: "funetec-equalsby-oficial.firebaseapp.com",
+            projectId: "funetec-equalsby-oficial",
+            storageBucket: "funetec-equalsby-oficial.firebasestorage.app",
+            messagingSenderId: "865231494956",
+            appId: "1:865231494956:web:059cb61995829bbf909689"
+        };
+
+        try {
+            if (typeof __firebase_config !== "undefined" && __firebase_config) {
+                const configStr = JSON.parse(__firebase_config);
+                if (Object.keys(configStr).length > 0) firebaseConfig = configStr;
+            }
+        } catch (error) { console.warn("Usando configuración de Firebase local por defecto."); }
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== "undefined" ? __app_id : "funetec-lms";
+
+        function getSafeCollection(collectionName) {
+            return collection(db, "artifacts", appId, "public", "data", collectionName);
+        }
+
+        const _svg = (p) => `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+        window.Icons = {
+            dashboard: _svg('<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>'),
+            users: _svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+            book: _svg('<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>'),
+            award: _svg('<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>'),
+            logout: _svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'),
+            menu: _svg('<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>'),
+            play: _svg('<polygon points="5 3 19 12 5 21 5 3"/>'),
+            check: _svg('<polyline points="20 6 9 17 4 12"/>')
+        };
+
+        window.shuffleArray = function(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        };
+
+        window.DB = {
+            init: async function(callback) {
+                let isResolved = false;
+                const safeCallback = (err) => {
+                    if (!isResolved && callback) {
+                        isResolved = true;
+                        callback(err);
+                    }
+                };
+
+                try {
+                    if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Error de autenticación Firebase:", error);
+                    safeCallback(error);
+                    return;
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (!user) {
+                        if (!window.dbInitialized) {
+                            safeCallback(new Error("Sesión inválida en Firebase"));
+                        }
+                        return;
+                    }
+
+                    const collections = Object.keys(cache);
+                    let loadedCount = 0;
+
+                    collections.forEach((colName) => {
+                        onSnapshot(getSafeCollection(colName), (snapshot) => {
+                            cache[colName] = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+                            
+                            if (window.dbInitialized) {
+                                if (window.State.currentUser && window.currentRoute.id) {
+                                    window.renderNotifications();
+                                    window.Router.navigate(window.currentRoute.id, window.currentRoute.params);
+                                }
+                            } else {
+                                loadedCount++;
+                                if (loadedCount === collections.length) {
+                                    window.dbInitialized = true;
+                                    
+                                    if (!cache.users.some(u => u.document === "admin@funetec.com")) {
+                                        window.DB.add("users", {
+                                            name: "Administrador",
+                                            document: "admin@funetec.com",
+                                            email: "admin@funetec.com",
+                                            password: "admin123",
+                                            role: "admin",
+                                            active: true
+                                        }, "u1");
+                                    }
+                                    safeCallback();
+                                }
+                            }
+                        }, (error) => {
+                            console.error("Firestore Error en " + colName + ":", error);
+                            if (!window.dbInitialized) safeCallback(error);
+                        });
+                    });
+                });
+            },
+            get: function(collectionName) {
+                return cache[collectionName] || [];
+            },
+            add: function(collectionName, data, documentId = null) {
+                const docRef = documentId ? doc(getSafeCollection(collectionName), documentId) : doc(getSafeCollection(collectionName));
+                data.id = docRef.id;
+                if (cache[collectionName]) cache[collectionName].push(data);
+                setDoc(docRef, data);
+                return data;
+            },
+            update: function(collectionName, documentId, data) {
+                if (cache[collectionName]) {
+                    const index = cache[collectionName].findIndex((item) => String(item.id) === String(documentId));
+                    if (index > -1) {
+                        cache[collectionName][index] = { ...cache[collectionName][index], ...data };
+                    }
+                }
+                updateDoc(doc(db, "artifacts", appId, "public", "data", collectionName, documentId), data);
+            },
+            delete: function(collectionName, documentId) {
+                if (cache[collectionName]) {
+                    cache[collectionName] = cache[collectionName].filter((item) => String(item.id) !== String(documentId));
+                }
+                deleteDoc(doc(db, "artifacts", appId, "public", "data", collectionName, documentId));
+            }
+        };
+
+        window.Auth = {
+            checkSession: function() {
+                const storedUser = window.SafeStorage.getItem("currentUser");
+                if (storedUser && storedUser.trim() !== "") {
+                    try {
+                        const parsedUser = JSON.parse(storedUser);
+                        const userInDb = window.DB.get("users").find((u) => String(u.id) === String(parsedUser.id));
+                        if (userInDb && userInDb.active !== false) {
+                            window.State.currentUser = userInDb;
+                            window.App.initApp();
+                        } else {
+                            window.Auth.logout();
+                        }
+                    } catch (error) {
+                        console.error("Error parseando sesión", error);
+                        window.Auth.logout();
+                    }
+                } else {
+                    window.App.showLogin();
+                }
+            },
+            login: function(identifier, password) {
+                if (!window.dbInitialized) {
+                    const errorEl = document.getElementById("login-error");
+                    if (errorEl) {
+                        errorEl.textContent = "Sincronizando base de datos, espera...";
+                        errorEl.classList.remove("hidden");
+                    }
+                    return;
+                }
+                
+                const user = window.DB.get("users").find((u) => (u.email === identifier || u.document === identifier) && u.password === password);
+                if (user) {
+                    if (user.email === "admin@funetec.com" || user.email === "admin@funtec.com" || user.document === "admin@funetec.com" || user.document === "admin@funtec.com") {
+                        if (user.role !== "admin") {
+                            user.role = "admin";
+                            window.DB.update("users", user.id, { role: "admin" });
+                        }
+                    }
+
+                    if (user.active === false) {
+                        const errorEl = document.getElementById("login-error");
+                        if (errorEl) {
+                            errorEl.textContent = "Usuario inactivo. Contacte al administrador.";
+                            errorEl.classList.remove("hidden");
+                        }
+                        return;
+                    }
+                    window.State.currentUser = user;
+                    window.SafeStorage.setItem("currentUser", JSON.stringify(user));
+                    window.App.initApp();
+                } else {
+                    const errorEl = document.getElementById("login-error");
+                    if (errorEl) {
+                        errorEl.textContent = "Credenciales incorrectas";
+                        errorEl.classList.remove("hidden");
+                    }
+                }
+            },
+            logout: function() {
+                window.State.currentUser = null;
+                window.currentRoute = { id: null, params: {} };
+                window.SafeStorage.removeItem("currentUser");
+                window.App.showLogin();
+            }
+        };
+
+        window.notifyUser = function(userId, message) {
+            window.DB.add("notifications", {
+                userId: String(userId),
+                message: message,
+                read: false,
+                date: (new Date()).toISOString()
+            });
+        };
+
+        window.renderNotifications = function() {
+            if (!window.State.currentUser) return;
+            const currentUserId = String(window.State.currentUser.id);
+            const userNotifs = window.DB.get("notifications")
+                .filter((n) => String(n.userId) === currentUserId)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+            const unreadCount = userNotifs.filter((n) => !n.read).length;
+            const badgeEl = document.getElementById("notif-badge");
+            
+            if (badgeEl) {
+                if (unreadCount > 0) {
+                    badgeEl.textContent = unreadCount;
+                    badgeEl.classList.remove("hidden");
+                } else {
+                    badgeEl.classList.add("hidden");
+                }
+            }
+            
+            const listEl = document.getElementById("notif-list");
+            if (listEl) {
+                if (userNotifs.length === 0) {
+                    listEl.innerHTML = '<div class="p-4 text-center text-gray">No hay notificaciones</div>';
+                    return;
+                }
+                listEl.innerHTML = userNotifs.map((notif) => `
+                    <div class="notif-item ${notif.read ? "" : "unread"}">
+                        ${notif.message}
+                        <div class="text-xs text-gray mt-1">${new Date(notif.date).toLocaleString()}</div>
+                    </div>
+                `).join("");
+            }
+        };
+
+        window.toggleNotifications = function() {
+            const dropdown = document.getElementById("notif-dropdown");
+            if (dropdown) {
+                dropdown.classList.toggle("show");
+                if (dropdown.classList.contains("show")) {
+                    window.markAllNotifRead();
+                }
+            }
+        };
+
+        window.markAllNotifRead = function() {
+            const currentUserId = String(window.State.currentUser.id);
+            window.DB.get("notifications").forEach((notif) => {
+                if (String(notif.userId) === currentUserId && !notif.read) {
+                    window.DB.update("notifications", notif.id, { read: true });
+                }
+            });
+        };
+
+        document.addEventListener("click", (event) => {
+            if (!event.target.closest(".notification-btn") && !event.target.closest(".notification-dropdown")) {
+                const dropdown = document.getElementById("notif-dropdown");
+                if (dropdown) dropdown.classList.remove("show");
+            }
+        });
+
+        window.App = {
+            toggleSidebar: function() {
+                document.getElementById("sidebar")?.classList.toggle("open");
+                document.getElementById("sidebar-overlay")?.classList.toggle("show");
+            },
+            showLogin: function() {
+                document.getElementById("login-view")?.classList.remove("hidden");
+                document.getElementById("app-view")?.classList.add("hidden");
+                document.getElementById("login-form")?.reset();
+                document.getElementById("login-form")?.classList.remove("hidden");
+                document.getElementById("login-error")?.classList.add("hidden");
+            },
+            initApp: function() {
+                document.getElementById("login-view")?.classList.add("hidden");
+                document.getElementById("app-view")?.classList.remove("hidden");
+                
+                const menuBtn = document.getElementById("mobile-menu-btn-container");
+                if (menuBtn) menuBtn.innerHTML = window.Icons.menu;
+                
+                const logoutBtn = document.getElementById("logout-btn-container");
+                if (logoutBtn) logoutBtn.innerHTML = `${window.Icons.logout} <span class='hidden sm:inline'>Salir</span>`;
+                
+                const profileBtn = document.getElementById("profile-btn-container");
+                if (profileBtn) profileBtn.style.display = window.State.currentUser.role === "admin" ? "flex" : "none";
+                
+                this.renderSidebar();
+                window.renderNotifications();
+                
+                if (!window.currentRoute.id) {
+                    window.Router.navigate(window.State.currentUser.role === "admin" ? "admin-dashboard" : "student-dashboard");
+                }
+            },
+            renderSidebar: function() {
+                const nav = document.getElementById("sidebar-nav");
+                if (!nav) return;
+                let html = window.State.currentUser.role === "admin" 
+                    ? `
+                        <a class="nav-item" onclick="window.Router.navigate('admin-dashboard')">${window.Icons.dashboard} Dashboard</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-users')">${window.Icons.users} Usuarios y Asignaciones</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-courses')">${window.Icons.book} Cursos y Contenido</a>
+                        <a class="nav-item" onclick="window.Router.navigate('admin-certs')">${window.Icons.award} Certificados y Resultados</a>
+                    ` 
+                    : `
+                        <a class="nav-item" onclick="window.Router.navigate('student-dashboard')">${window.Icons.book} Mis Cursos</a>
+                        <a class="nav-item" onclick="window.Router.navigate('student-certs')">${window.Icons.award} Mis Certificados</a>
+                    `;
+                nav.innerHTML = html;
+            }
+        };
+
+        window.Router = {
+            navigate: function(routeId, params = {}) {
+                document.getElementById("sidebar")?.classList.remove("open");
+                document.getElementById("sidebar-overlay")?.classList.remove("show");
+                window.currentRoute = { id: routeId, params: params };
+                
+                document.querySelectorAll(".nav-item").forEach((el) => el.classList.remove("active"));
+                document.querySelectorAll(".nav-item").forEach((el) => {
+                    if (el.getAttribute("onclick")?.includes(routeId)) {
+                        el.classList.add("active");
+                        const titleEl = document.getElementById("topbar-title");
+                        if (titleEl) titleEl.textContent = el.textContent.trim();
+                    }
+                });
+                
+                const mainArea = document.getElementById("main-content-area");
+                if (mainArea) {
+                    mainArea.innerHTML = "";
+                    switch (routeId) {
+                        case "admin-dashboard": window.AdminViews.renderDashboard(mainArea); break;
+                        case "admin-users": window.AdminViews.renderUsers(mainArea); break;
+                        case "admin-courses": window.AdminViews.renderCourses(mainArea); break;
+                        case "admin-course-detail": window.AdminViews.renderCourseDetail(mainArea, params.id); break;
+                        case "admin-certs": window.AdminViews.renderCerts(mainArea); break;
+                        case "student-dashboard": window.StudentViews.renderDashboard(mainArea); break;
+                        case "student-course": window.StudentViews.renderCourse(mainArea, params.id); break;
+                        case "student-exam": window.StudentViews.renderExam(mainArea, params.id); break;
+                        case "student-certs": window.StudentViews.renderCerts(mainArea); break;
+                    }
+                }
+            }
+        };
+
+        window.UI = {
+            showModal: function(htmlContent, extraClass = "") {
+                const container = document.getElementById("modal-container");
+                if (container) {
+                    container.innerHTML = `
+                        <div class="modal-overlay" onclick="if(event.target === this) window.UI.closeModal()">
+                            <div class="modal-content ${extraClass}">
+                                ${htmlContent}
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            closeModal: function() {
+                const container = document.getElementById("modal-container");
+                if (container) container.innerHTML = "";
+            },
+            showAlert: function(message) {
+                this.showModal(`
+                    <div class="text-center p-4">
+                        <h3 class="mb-4 font-bold text-xl text-text">Mensaje</h3>
+                        <p class="mb-6 text-gray">${message}</p>
+                        <div class="flex justify-center">
+                            <button class="btn btn-primary w-full sm:w-auto px-8" onclick="window.UI.closeModal()">Entendido</button>
+                        </div>
+                    </div>
+                `);
+            }
+        };
+
+        window.UIHelpers = {
+            filterTable: function(inputEl, tableId) {
+                const term = inputEl.value.toLowerCase();
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                const rows = table.getElementsByTagName("tr");
+                for (let i = 1; i < rows.length; i++) {
+                    rows[i].style.display = rows[i].textContent.toLowerCase().includes(term) ? "" : "none";
+                }
+            },
+            filterGrid: function(inputEl, gridId) {
+                const term = inputEl.value.toLowerCase();
+                const grid = document.getElementById(gridId);
+                if (!grid) return;
+                const cards = grid.getElementsByClassName("course-card");
+                for (let i = 0; i < cards.length; i++) {
+                    cards[i].style.display = cards[i].textContent.toLowerCase().includes(term) ? "" : "none";
+                }
+            }
+        };
+
+        window.AdminViews = {
+            openProfileModal: function() {
+                window.UI.showModal(`
+                    <h3 class="mb-4">Cambiar Contraseña</h3>
+                    <form onsubmit="event.preventDefault(); window.AdminViews.updateAdminPassword(this)">
+                        <div class="form-group">
+                            <label>Contraseña Actual</label>
+                            <input type="password" name="currentPassword" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nueva Contraseña</label>
+                            <input type="password" name="newPassword" class="form-control" required minlength="6">
+                        </div>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar Cambios</button>
+                        </div>
+                    </form>
+                `);
+            },
+            updateAdminPassword: function(formEl) {
+                const current = formEl.elements.currentPassword.value;
+                const newPass = formEl.elements.newPassword.value;
+                if (window.State.currentUser.password !== current) {
+                    return window.UI.showAlert("La contraseña actual es incorrecta.");
+                }
+                window.DB.update("users", window.State.currentUser.id, { password: newPass });
+                window.State.currentUser.password = newPass;
+                window.SafeStorage.setItem("currentUser", JSON.stringify(window.State.currentUser));
+                window.UI.showAlert("Contraseña actualizada exitosamente.");
+            },
+            renderDashboard: function(container) {
+                const students = window.DB.get("users").filter((u) => u.document !== "admin@funetec.com");
+                const courses = window.DB.get("courses");
+                const pendingCerts = window.DB.get("certificates").filter((c) => c.status === "pending");
+                const pendingExams = window.DB.get("progress").filter((p) => p.estadoExamen === "solicitado");
+                
+                let html = `
+                    <div class="course-grid mb-6">
+                        <div class="card text-center">
+                            <h3 class="text-gray">Usuarios en el Sistema</h3>
+                            <div class="text-primary font-bold" style="font-size: 3rem;">${students.length}</div>
+                        </div>
+                        <div class="card text-center">
+                            <h3 class="text-gray">Cursos Activos</h3>
+                            <div class="text-primary font-bold" style="font-size: 3rem;">${courses.length}</div>
+                        </div>
+                        <div class="card text-center">
+                            <h3 class="text-gray">Certificados Pendientes</h3>
+                            <div class="text-warning font-bold" style="font-size: 3rem;">${pendingCerts.length}</div>
+                        </div>
+                    </div>
+                `;
+                
+                if (pendingExams.length > 0) {
+                    html += `
+                        <h3 class="mb-4 text-danger">Solicitudes de Repetición de Examen</h3>
+                        <div class="card table-responsive">
+                            <table>
+                                <thead>
+                                    <tr><th>Estudiante</th><th>Curso</th><th>Intentos previos</th><th>Acciones</th></tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    pendingExams.forEach((progress) => {
+                        const student = window.DB.get("users").find((u) => String(u.id) === String(progress.studentId));
+                        const course = window.DB.get("courses").find((c) => String(c.id) === String(progress.courseId));
+                        if (student && course) {
+                            html += `
+                                <tr>
+                                    <td>${student.name}</td>
+                                    <td>${course.name}</td>
+                                    <td>${progress.intentos || 1}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success w-full sm:w-auto" onclick="window.AdminViews.authorizeExam('${progress.id}', '${student.id}')">
+                                            Autorizar Intento
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+                    html += `</tbody></table></div>`;
+                }
+                container.innerHTML = html;
+            },
+            authorizeExam: function(progressId, studentId) {
+                window.DB.update("progress", progressId, { estadoExamen: "habilitado" });
+                window.notifyUser(studentId, "Tu solicitud para repetir examen ha sido autorizada.");
+                window.UI.showAlert("Examen habilitado nuevamente.");
+                window.Router.navigate("admin-dashboard");
+            },
+            renderUsers: function(container) {
+                const students = window.DB.get("users").filter((u) => u.document !== "admin@funetec.com");
+                const enrollments = window.DB.get("enrollments");
+                
+                let html = `
+                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                        <h3 class="m-0">Gestión de Usuarios</h3>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <input type="text" class="form-control" placeholder="Buscar usuario..." onkeyup="window.UIHelpers.filterTable(this, 'users-table')">
+                            <button class="btn btn-primary w-full sm:w-auto whitespace-nowrap" onclick="window.AdminViews.openEditUserModal()">Nuevo</button>
+                        </div>
+                    </div>
+                    <div class="card table-responsive">
+                        <table id="users-table">
+                            <thead>
+                                <tr><th>Nombre</th><th>Cédula / Correo</th><th>Rol</th><th>Estado</th><th>Cursos Asignados</th><th>Acciones</th></tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                if (students.length === 0) {
+                    html += `<tr><td colspan="6" class="text-center text-gray">No hay usuarios registrados</td></tr>`;
+                }
+                
+                students.forEach((student) => {
+                    const studentEnrollments = enrollments.filter((e) => String(e.studentId) === String(student.id)).length;
+                    const statusBadge = student.active === false 
+                        ? '<span class="badge badge-danger">Inactivo</span>' 
+                        : '<span class="badge badge-success">Activo</span>';
+                    const roleBadge = student.role === "admin" 
+                        ? '<span class="badge badge-warning">Admin</span>' 
+                        : '<span class="badge badge-secondary">Estudiante</span>';
+                        
+                    html += `
+                        <tr>
+                            <td>${student.name}</td>
+                            <td>${student.document}</td>
+                            <td>${roleBadge}</td>
+                            <td>${statusBadge}</td>
+                            <td><span class="badge badge-primary">${studentEnrollments} asignados</span></td>
+                            <td>
+                                <div class="flex gap-2 flex-wrap">
+                                    <button class="btn btn-outline btn-sm flex-1 sm:flex-none" onclick="window.AdminViews.openEditUserModal('${student.id}')" title="Editar Estudiante">Editar</button>
+                                    <button class="btn btn-danger btn-sm flex-1 sm:flex-none" onclick="window.AdminViews.confirmDeleteUser('${student.id}')" title="Eliminar Estudiante">Eliminar</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            },
+            openEditUserModal: function(userId = null) {
+                const user = userId ? window.DB.get("users").find((u) => String(u.id) === String(userId)) : null;
+                const courses = window.DB.get("courses");
+                
+                const userEnrollments = (userId && userId !== "null")
+                    ? window.DB.get("enrollments")
+                        .filter((e) => String(e.studentId) === String(userId))
+                        .map((e) => String(e.courseId))
+                    : [];
+                    
+                let coursesHtml = "";
+                if (courses.length > 0) {
+                    coursesHtml = `
+                        <div class="form-group">
+                            <label>Cursos Asignados</label>
+                            <div class="p-2 border rounded" style="max-height: 140px; overflow-y: auto; border-color: var(--border);">
+                                ${courses.map((c) => {
+                                    const safeName = c.name || "Curso no especificado";
+                                    return `
+                                    <label class="flex items-center gap-2 mb-1 cursor-pointer text-sm font-normal text-text">
+                                        <input type="checkbox" name="assign_courses" value="${c.id}" ${userEnrollments.includes(String(c.id)) ? "checked" : ""}> ${safeName}
+                                    </label>
+                                    `;
+                                }).join("")}
+                            </div>
+                            <p class="text-sm text-gray mt-1">Marque o desmarque para asignar/quitar cursos.</p>
+                        </div>
+                    `;
+                }
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">${user ? "Editar Usuario" : "Nuevo Usuario"}</h3>
+                    <form onsubmit="event.preventDefault(); window.AdminViews.saveUser(this, ${userId ? `'${userId}'` : "null"})">
+                        <div class="form-group">
+                            <label>Nombre</label>
+                            <input type="text" name="name" class="form-control" value="${user?.name || ""}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cédula</label>
+                            <input type="text" name="document" class="form-control" value="${user?.document || ""}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo (Opcional)</label>
+                            <input type="email" name="email" class="form-control" value="${user?.email || ""}">
+                        </div>
+                        <div class="form-group">
+                            <label>${user ? "Nueva Contraseña (dejar vacío para no cambiar)" : "Contraseña"}</label>
+                            <input type="password" name="password" class="form-control" ${user ? "" : "required"}>
+                        </div>
+                        ${user ? `
+                            <div class="form-group">
+                                <label>Rol en Plataforma</label>
+                                <select name="role" class="form-control">
+                                    <option value="student" ${user.role !== "admin" ? "selected" : ""}>Estudiante</option>
+                                    <option value="admin" ${user.role === "admin" ? "selected" : ""}>Administrador</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Estado</label>
+                                <select name="active" class="form-control">
+                                    <option value="true" ${user.active !== false ? "selected" : ""}>Activo</option>
+                                    <option value="false" ${user.active === false ? "selected" : ""}>Inactivo</option>
+                                </select>
+                            </div>
+                        ` : ""}
+                        ${coursesHtml}
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar</button>
+                        </div>
+                    </form>
+                `);
+            },
+            saveUser: function(formEl, userId = null) {
+                const data = {
+                    name: formEl.elements.name.value,
+                    document: formEl.elements.document.value,
+                    email: formEl.elements.email.value
+                };
+                
+                if (formEl.elements.active) data.active = formEl.elements.active.value === "true";
+                if (formEl.elements.password.value.trim() !== "") data.password = formEl.elements.password.value;
+                if (formEl.elements.role) data.role = formEl.elements.role.value;
+                else data.role = "student";
+                
+                const existingUser = window.DB.get("users").find((u) => u.document === data.document);
+                if (existingUser && String(existingUser.id) !== String(userId)) {
+                    return window.UI.showAlert("La cédula ya está registrada.");
+                }
+                
+                let targetUserId = userId;
+                if (userId && userId !== "null") {
+                    window.DB.update("users", userId, data);
+                } else {
+                    const newUser = window.DB.add("users", data);
+                    targetUserId = newUser.id || data.id;
+                }
+                
+                const safeStudentId = String(targetUserId);
+                
+                const selectedCourses = [];
+                formEl.querySelectorAll('input[name="assign_courses"]').forEach(cb => {
+                    if (cb.checked) selectedCourses.push(String(cb.value));
+                });
+                
+                const currentEnrollments = window.DB.get("enrollments").filter(e => String(e.studentId) === safeStudentId);
+                
+                selectedCourses.forEach((courseId) => {
+                    if (!currentEnrollments.find(e => String(e.courseId) === String(courseId))) {
+                        window.DB.add("enrollments", { studentId: safeStudentId, courseId: String(courseId) });
+                    }
+                });
+                
+                currentEnrollments.forEach((enrollment) => {
+                    if (!selectedCourses.includes(String(enrollment.courseId))) {
+                        window.DB.delete("enrollments", enrollment.id);
+                    }
+                });
+                
+                window.UI.closeModal();
+                window.Router.navigate("admin-users");
+            },
+            confirmDeleteUser: function(userId) {
+                window.UI.showModal(`
+                    <div class="text-center p-4">
+                        <svg class="icon mx-auto mb-4 text-danger" style="width: 50px; height:50px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        <h3 class="mb-2 text-danger font-bold text-xl">¡Advertencia Crítica!</h3>
+                        <p class="mb-4 text-gray">¿Eliminar estudiante completamente del sistema? Esto borrará sus progresos y certificados de forma permanente.</p>
+                        <div class="flex justify-center gap-4 mt-6 mobile-stack">
+                            <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button class="btn btn-danger w-full" onclick="window.AdminViews.deleteUser('${userId}')">Eliminar</button>
+                        </div>
+                    </div>
+                `);
+            },
+            deleteUser: function(userId) {
+                const idStr = String(userId);
+                window.DB.get("enrollments").filter(e => String(e.studentId) === idStr).forEach(e => window.DB.delete("enrollments", e.id));
+                window.DB.get("progress").filter(p => String(p.studentId) === idStr).forEach(p => window.DB.delete("progress", p.id));
+                window.DB.get("certificates").filter(c => String(c.studentId) === idStr).forEach(c => window.DB.delete("certificates", c.id));
+                window.DB.get("exam_results").filter(er => String(er.studentId) === idStr).forEach(er => window.DB.delete("exam_results", er.id));
+                window.DB.get("notifications").filter(n => String(n.userId) === idStr).forEach(n => window.DB.delete("notifications", n.id));
+                window.DB.delete("users", idStr);
+                window.UI.closeModal();
+                window.Router.navigate("admin-users");
+            },
+            renderCourses: function(container) {
+                const courses = window.DB.get("courses");
+                let html = `
+                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                        <h3 class="m-0">Gestión de Cursos</h3>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <input type="text" class="form-control flex-1" placeholder="Buscar curso..." onkeyup="window.UIHelpers.filterGrid(this, 'admin-courses-grid')">
+                            <button class="btn btn-primary w-full sm:w-auto whitespace-nowrap" onclick="window.AdminViews.openCourseModal()">Crear Curso</button>
+                        </div>
+                    </div>
+                    <div class="course-grid" id="admin-courses-grid">
+                `;
+                
+                if (courses.length === 0) {
+                    html += `<p class="text-gray">No hay cursos creados.</p>`;
+                }
+                
+                courses.forEach((course) => {
+                    const contentCount = window.DB.get("contents").filter(c => String(c.courseId) === String(course.id)).length;
+                    
+                    const cName = course.name || "Curso no especificado";
+                    const cDesc = course.description || "Sin descripción";
+                    const cNameShort = cName.length >= 2 ? cName.substring(0, 2).toUpperCase() : "CU";
+                    
+                    const placeholderImg = `https://via.placeholder.com/300x160/f9fafb/6b7280?text=${encodeURIComponent(cNameShort)}`;
+                    const imgHtml = course.imageUrl 
+                        ? `<img src="${course.imageUrl}" alt="Portada" onerror="this.onerror=null; this.src='${placeholderImg}'">` 
+                        : `<span class="font-bold opacity-50" style="font-size: 2.5rem;">${cNameShort}</span>`;
+                        
+                    html += `
+                        <div class="course-card">
+                            <div class="course-img">${imgHtml}</div>
+                            <div class="course-body">
+                                <div>
+                                    <h4 class="course-title">${cName}</h4>
+                                    <p class="text-sm text-gray mb-2">${cDesc.length > 50 ? cDesc.substring(0, 50) + "..." : cDesc}</p>
+                                    <span class="badge badge-primary">${contentCount} Módulos</span>
+                                </div>
+                                <div class="action-grid cols-3">
+                                    <button class="btn-card" onclick="window.Router.navigate('admin-course-detail', {id: '${course.id}'})"><span>Contenido</span></button>
+                                    <button class="btn-card" onclick="window.AdminViews.openCourseModal('${course.id}')"><span>Editar</span></button>
+                                    <button class="btn-card danger" onclick="window.AdminViews.confirmDeleteCourse('${course.id}')"><span>Eliminar</span></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                container.innerHTML = html;
+            },
+            previewImage: function(event) {
+                const file = event.target.files[0];
+                const container = document.getElementById("image-preview-container");
+                const preview = document.getElementById("image-preview");
+                
+                if (file) {
+                    if (file.size > 2097152) {
+                        window.UI.showAlert("La imagen excede el tamaño máximo de 2MB.");
+                        event.target.value = "";
+                        return;
+                    }
+                    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+                        window.UI.showAlert("Solo se permiten formatos JPG y PNG.");
+                        event.target.value = "";
+                        return;
+                    }
+                    preview.src = URL.createObjectURL(file);
+                    if (container) container.style.display = "block";
+                }
+            },
+            openCourseModal: function(courseId = null) {
+                const course = courseId ? window.DB.get("courses").find((c) => String(c.id) === String(courseId)) : null;
+                const existingImgUrl = course?.imageUrl || "";
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">${course ? "Editar" : "Nuevo"} Curso</h3>
+                    <form id="course-form" onsubmit="event.preventDefault(); window.AdminViews.saveCourse(this, ${courseId ? `'${courseId}'` : "null"})">
+                        <div class="form-group">
+                            <label>Nombre del Curso</label>
+                            <input type="text" name="name" class="form-control" value="${course?.name || ""}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <textarea name="desc" class="form-control" rows="3" required>${course?.description || ""}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Horas del Curso</label>
+                            <input type="number" name="hours" class="form-control" value="${course?.hours || 48}" required min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Imagen de Portada (Obligatorio, JPG/PNG, Max 2MB)</label>
+                            <input type="file" name="imageFile" class="form-control" accept=".jpg, .jpeg, .png" onchange="window.AdminViews.previewImage(event)" ${existingImgUrl ? "" : "required"}>
+                            <input type="hidden" name="existingImageUrl" value="${existingImgUrl}">
+                            <div id="image-preview-container" class="mt-2 text-sm text-gray" style="${existingImgUrl ? "display:block;" : "display:none;"}">
+                                Vista previa:<br>
+                                <img id="image-preview" src="${existingImgUrl}" class="w-full mt-2 rounded" style="height:160px; object-fit: cover;">
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto" id="save-course-btn">Guardar</button>
+                        </div>
+                    </form>
+                `);
+            },
+            saveCourse: async function(formEl, courseId = null) {
+                const saveBtn = document.getElementById("save-course-btn");
+                if (!saveBtn) return;
+                
+                const fileInput = formEl.elements.imageFile;
+                const file = fileInput ? fileInput.files[0] : null;
+                let imageUrl = formEl.elements.existingImageUrl?.value || null;
+                
+                if (!file && !imageUrl) {
+                    return window.UI.showAlert("La imagen de portada es obligatoria.");
+                }
+                
+                saveBtn.disabled = true;
+                saveBtn.textContent = file ? "Subiendo imagen..." : "Guardando...";
+                
+                try {
+                    if (file) {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        formData.append("upload_preset", "ml_default_funetec");
+                        const res = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/image/upload", {
+                            method: "POST",
+                            body: formData
+                        });
+                        if (!res.ok) throw new Error("Error al subir la imagen a Cloudinary");
+                        const data = await res.json();
+                        imageUrl = data.secure_url;
+                    }
+                    
+                    saveBtn.innerHTML = `Guardando curso...`;
+                    
+                    const courseData = {
+                        name: formEl.elements.name.value,
+                        description: formEl.elements.desc.value,
+                        hours: formEl.elements.hours.value,
+                        imageUrl: imageUrl || null
+                    };
+                    
+                    if (courseId && courseId !== "null") {
+                        window.DB.update("courses", courseId, courseData);
+                    } else {
+                        window.DB.add("courses", courseData);
+                    }
+                    
+                    window.UI.closeModal();
+                    window.Router.navigate("admin-courses");
+                } catch (error) {
+                    console.error("Error crítico en saveCourse:", error);
+                    window.UI.showAlert("Fallo al guardar: " + error.message);
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = `Guardar`;
+                }
+            },
+            confirmDeleteCourse: function(courseId) {
+                const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
+                const cName = course?.name || "Curso";
+                window.UI.showModal(`
+                    <div class="text-center p-4">
+                        <svg class="icon mx-auto mb-4 text-danger" style="width: 50px; height:50px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        <h3 class="mb-2 text-danger font-bold text-xl">¡Advertencia Crítica!</h3>
+                        <p class="mb-4 text-gray">¿Estás seguro de que deseas eliminar el curso <strong>"${cName}"</strong>?</p>
+                        <div class="flex justify-center gap-4 mt-6 mobile-stack">
+                            <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button class="btn btn-danger w-full" id="confirm-delete-btn" onclick="window.AdminViews.deleteCourse('${courseId}')">Eliminar Curso</button>
+                        </div>
+                    </div>
+                `);
+            },
+            deleteCourse: async function(courseId) {
+                const btn = document.getElementById("confirm-delete-btn");
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = "Eliminando...";
+                }
+                
+                const idStr = String(courseId);
+                window.DB.get("contents").filter(c => String(c.courseId) === idStr).forEach(c => window.DB.delete("contents", c.id));
+                window.DB.get("exams").filter(e => String(e.courseId) === idStr).forEach(e => window.DB.delete("exams", e.id));
+                window.DB.get("enrollments").filter(e => String(e.courseId) === idStr).forEach(e => window.DB.delete("enrollments", e.id));
+                window.DB.get("progress").filter(p => String(p.courseId) === idStr).forEach(p => window.DB.delete("progress", p.id));
+                window.DB.get("certificates").filter(c => String(c.courseId) === idStr).forEach(c => window.DB.delete("certificates", c.id));
+                
+                window.DB.delete("courses", idStr);
+                window.UI.closeModal();
+                window.Router.navigate("admin-courses");
+            },
+            renderCourseDetail: function(container, courseId) {
+                const titleEl = document.getElementById("topbar-title");
+                if (titleEl) titleEl.textContent = "Gestionar Contenido";
+                
+                const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
+                if (!course) return;
+
+                const contents = window.DB.get("contents").filter((c) => String(c.courseId) === String(courseId));
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
+                
+                const cName = course.name || "Curso no especificado";
+
+                let html = `
+                    <div class="flex justify-between items-center mb-4 mobile-stack">
+                        <h3 class="truncate w-full sm:w-auto">Curso: ${cName}</h3>
+                        <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('admin-courses')">Volver</button>
+                    </div>
+                    <div class="course-view-layout">
+                        <div class="card" style="overflow-x:hidden;">
+                            <div class="flex justify-between items-center mb-4 mobile-stack">
+                                <h4>Contenido del Curso</h4>
+                                <button class="btn btn-primary w-full sm:w-auto" onclick="window.AdminViews.openContentModal('${courseId}')">Agregar Módulo</button>
+                            </div>
+                            <div class="content-list">
+                `;
+                
+                if (contents.length === 0) {
+                    html += '<div class="p-4 text-gray text-center">Sin contenido</div>';
+                }
+                
+                contents.forEach((content, idx) => {
+                    html += `
+                        <div class="content-item mobile-stack">
+                            <span class="mb-2 w-full"><strong>${idx + 1}.</strong> ${content.title} <span class="badge badge-secondary ml-2">${content.type}</span></span>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button class="btn btn-outline btn-sm flex-1" onclick="window.AdminViews.openContentModal('${courseId}', '${content.id}')">Editar</button>
+                                <button class="btn btn-danger btn-sm flex-1" onclick="window.AdminViews.confirmDeleteContent('${content.id}', '${courseId}')">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                            </div>
+                        </div>
+                        <div class="card flex-col gap-4 w-full" style="box-sizing:border-box; word-break:break-word;">
+                            <h4 class="font-bold mb-2">Evaluación Final</h4>
+                            ${exam 
+                                ? `<div class="flex items-center gap-2 font-bold text-success mb-4 flex-wrap"><span class="flex text-success mr-2">✓</span> <span>Examen configurado (${(exam.questions || []).length} preg.)</span></div>
+                                   <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                     <button class="btn-card primary" onclick="window.AdminViews.openExamModal('${courseId}', true)"><span>Editar Examen</span></button>
+                                   </div>` 
+                                : `<p class="text-warning mb-4 font-bold">No hay examen configurado.</p>
+                                   <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                     <button class="btn-card primary" onclick="window.AdminViews.openExamModal('${courseId}', false)"><span>Crear Examen</span></button>
+                                   </div>`
+                            }
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = html;
+            },
+            openContentModal: function(courseId, contentId = null) {
+                const content = contentId ? window.DB.get("contents").find((c) => String(c.id) === String(contentId)) : null;
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">${content ? "Editar" : "Agregar"} Contenido</h3>
+                    <form onsubmit="event.preventDefault(); window.AdminViews.saveContent(this, '${courseId}', ${contentId ? `'${contentId}'` : "null"})">
+                        <div class="form-group">
+                            <label>Título</label>
+                            <input type="text" name="title" class="form-control" value="${content?.title || ""}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select name="type" class="form-control" required>
+                                <option value="video" ${content?.type === "video" ? "selected" : ""}>Video de YouTube (Pegar URL completa)</option>
+                                <option value="pdf" ${content?.type === "pdf" ? "selected" : ""}>Enlace Externo / Documento (Abre en otra pestaña)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>URL del recurso</label>
+                            <input type="url" name="url" class="form-control" value="${content?.url || ""}" required placeholder="https://www.youtube.com/watch?v=...">
+                        </div>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar</button>
+                        </div>
+                    </form>
+                `);
+            },
+            saveContent: function(formEl, courseId, contentId = null) {
+                const url = formEl.elements.url.value;
+                const title = formEl.elements.title.value;
+                const type = formEl.elements.type.value;
+                
+                if (contentId && contentId !== "null") {
+                    window.DB.update("contents", contentId, { title, type, url });
+                } else {
+                    window.DB.add("contents", { courseId: String(courseId), title, type, url });
+                }
+                
+                window.UI.closeModal();
+                window.Router.navigate("admin-course-detail", { id: courseId });
+            },
+            confirmDeleteContent: function(contentId, courseId) {
+                window.UI.showModal(`
+                    <div class="text-center p-4">
+                        <svg class="icon mx-auto mb-4 text-danger" style="width: 50px; height:50px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        <h3 class="mb-2 text-danger font-bold text-xl">Eliminar Módulo</h3>
+                        <p class="mb-4 text-gray">¿Estás seguro de que deseas eliminar este contenido?</p>
+                        <div class="flex justify-center gap-4 mt-6 mobile-stack">
+                            <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button class="btn btn-danger w-full" onclick="window.AdminViews.deleteContent('${contentId}', '${courseId}')">Eliminar</button>
+                        </div>
+                    </div>
+                `);
+            },
+            deleteContent: function(contentId, courseId) {
+                window.DB.delete("contents", contentId);
+                window.UI.closeModal();
+                window.Router.navigate("admin-course-detail", { id: courseId });
+            },
+            openExamModal: function(courseId, isEdit) {
+                const exam = isEdit 
+                    ? window.DB.get("exams").find((e) => String(e.courseId) === String(courseId)) 
+                    : { courseId: String(courseId), passScore: 60, questions: [] };
+                    
+                window.tempExam = JSON.parse(JSON.stringify(exam));
+                if (!window.tempExam.questions) window.tempExam.questions = [];
+                
+                const generateHtml = () => {
+                    const questionsHtml = window.tempExam.questions.map((q, idx) => `
+                        <div class="p-4 mb-4 rounded border bg-bg" style="border-color: var(--border);">
+                            <div class="flex justify-between items-center mb-3">
+                                <strong>Pregunta ${idx + 1}</strong>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="window.tempExam.questions.splice(${idx}, 1); window.AdminViews.refreshExamBuilder()" title="Eliminar Pregunta">Eliminar</button>
+                            </div>
+                            <input type="text" class="form-control mb-3" value="${q.q}" onchange="window.tempExam.questions[${idx}].q = this.value" placeholder="Texto de la pregunta" required>
+                            ${q.options.map((opt, optIdx) => `
+                                <div class="flex items-center gap-3 mb-2 flex-wrap">
+                                    <input type="radio" name="correct_${idx}" ${q.correctIdx === optIdx ? "checked" : ""} onchange="window.tempExam.questions[${idx}].correctIdx = ${optIdx}" required style="transform:scale(1.2);">
+                                    <input type="text" class="form-control flex-1 min-w-[200px]" value="${opt}" onchange="window.tempExam.questions[${idx}].options[${optIdx}] = this.value" placeholder="Opción ${optIdx + 1}" required>
+                                </div>
+                            `).join("")}
+                        </div>
+                    `).join("");
+                    
+                    return `
+                        <h3 class="mb-4">Configurar Examen Final</h3>
+                        <form onsubmit="event.preventDefault(); window.AdminViews.saveExam('${courseId}')">
+                            <div class="form-group">
+                                <label>Puntaje mínimo para aprobar (%)</label>
+                                <input type="number" id="exam-score" class="form-control" value="${window.tempExam.passScore}" min="1" max="100" required>
+                            </div>
+                            <div id="questions-container">${questionsHtml}</div>
+                            <button type="button" class="btn btn-outline w-full mb-4" onclick="window.AdminViews.addTempQuestion()">Agregar Pregunta</button>
+                            <div class="flex justify-between flex-wrap gap-2">
+                                <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                                <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar Examen</button>
+                            </div>
+                        </form>
+                    `;
+                };
+                
+                window.UI.showModal(generateHtml());
+                
+                window.AdminViews.refreshExamBuilder = function() {
+                    const modal = document.querySelector(".modal-content");
+                    if (modal) modal.innerHTML = generateHtml();
+                };
+                
+                window.AdminViews.addTempQuestion = function() {
+                    window.tempExam.questions.push({ q: "", options: ["", "", ""], correctIdx: 0 });
+                    window.AdminViews.refreshExamBuilder();
+                };
+            },
+            saveExam: function(courseId) {
+                if (window.tempExam.questions.length === 0) {
+                    return window.UI.showAlert("Agregue al menos una pregunta.");
+                }
+                
+                const scoreInput = document.getElementById("exam-score");
+                if (scoreInput) {
+                    window.tempExam.passScore = parseInt(scoreInput.value);
+                }
+                
+                const existingExam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
+                if (existingExam) {
+                    window.DB.update("exams", existingExam.id, {
+                        passScore: window.tempExam.passScore,
+                        questions: window.tempExam.questions
+                    });
+                } else {
+                    window.DB.add("exams", window.tempExam);
+                }
+                
+                window.UI.closeModal();
+                window.Router.navigate("admin-course-detail", { id: courseId });
+            },
+            openCertConfigModal: function() {
+                const cfg = window.DB.get("cert_config")[0] || {};
+                const defs = {
+                    h1: "Institución de Educación",
+                    h2: "para el Trabajo y Desarrollo Humano",
+                    sh1: "Aprobado por la Secretaria de Educación Distrital de Barranquilla mediante Resolución N° 06077 del 19 de octubre de 2023.",
+                    sh2: "Educación para el Trabajo y Desarrollo Humano.",
+                    constar: "Hace constar que :",
+                    aprobo: "Aprobó el curso de:",
+                    duracion: "Con una duración de ( {horas} horas).",
+                    vigencia: "( vigencia 2 años )",
+                    f1n: "KELLY PATRICIA REYES UTRIA",
+                    f1r: "Directora",
+                    f2n: "NEDIS FERNANDEZ BARRANCO",
+                    f2r: "Coordinadora Académica",
+                    ft1: "funetec2022@gmail.com",
+                    ft2: "calle 47#18_24 Barranquilla",
+                    ft3: "3046781679"
+                };
+                
+                const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">Configurar Diseño del Certificado</h3>
+                    <form id="cert-config-form" onsubmit="event.preventDefault(); window.AdminViews.saveCertConfig(this, '${cfg.id || ''}')">
+                        <div style="max-height: 60vh; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 1rem;">
+                            
+                            <div>
+                                <label class="text-xs text-primary font-bold">ENCABEZADOS</label>
+                                <input type="text" name="h1" class="form-control mb-2" value="${val('h1')}" placeholder="Línea 1">
+                                <input type="text" name="h2" class="form-control mb-2" value="${val('h2')}" placeholder="Línea 2">
+                                <input type="text" name="sh1" class="form-control mb-2" value="${val('sh1')}" placeholder="Subtítulo 1">
+                                <input type="text" name="sh2" class="form-control" value="${val('sh2')}" placeholder="Subtítulo 2">
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs text-primary font-bold">CUERPO</label>
+                                <input type="text" name="constar" class="form-control mb-2" value="${val('constar')}" placeholder="Texto constancia">
+                                <input type="text" name="aprobo" class="form-control mb-2" value="${val('aprobo')}" placeholder="Texto aprobación">
+                                <input type="text" name="duracion" class="form-control mb-2" value="${val('duracion')}" placeholder="Ej: Con una duración de ( {horas} horas).">
+                                <input type="text" name="vigencia" class="form-control" value="${val('vigencia')}" placeholder="Vigencia">
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs text-primary font-bold">FIRMAS (Imágenes PNG sin fondo)</label>
+                                <div class="flex gap-2 mb-2 items-center flex-wrap">
+                                    <div class="flex-1 w-full min-w-[200px]">
+                                        <input type="file" name="f1file" class="form-control mb-1" accept="image/png, image/jpeg">
+                                        <input type="hidden" name="f1img" value="${val('f1img') || ''}">
+                                        ${val('f1img') ? `<img src="${val('f1img')}" style="height:40px; object-fit:contain;">` : ''}
+                                    </div>
+                                    <div class="flex-1 flex gap-2 w-full min-w-[200px]">
+                                        <input type="text" name="f1n" class="form-control" value="${val('f1n')}" placeholder="Nombre 1">
+                                        <input type="text" name="f1r" class="form-control" value="${val('f1r')}" placeholder="Cargo 1">
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 items-center flex-wrap mt-4">
+                                    <div class="flex-1 w-full min-w-[200px]">
+                                        <input type="file" name="f2file" class="form-control mb-1" accept="image/png, image/jpeg">
+                                        <input type="hidden" name="f2img" value="${val('f2img') || ''}">
+                                        ${val('f2img') ? `<img src="${val('f2img')}" style="height:40px; object-fit:contain;">` : ''}
+                                    </div>
+                                    <div class="flex-1 flex gap-2 w-full min-w-[200px]">
+                                        <input type="text" name="f2n" class="form-control" value="${val('f2n')}" placeholder="Nombre 2">
+                                        <input type="text" name="f2r" class="form-control" value="${val('f2r')}" placeholder="Cargo 2">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="text-xs text-primary font-bold">PIE DE PÁGINA (CONTACTO)</label>
+                                <div class="flex gap-2 flex-wrap">
+                                    <input type="text" name="ft1" class="form-control flex-1 min-w-[150px]" value="${val('ft1')}" placeholder="Email">
+                                    <input type="text" name="ft2" class="form-control flex-1 min-w-[150px]" value="${val('ft2')}" placeholder="Dirección">
+                                    <input type="text" name="ft3" class="form-control flex-1 min-w-[150px]" value="${val('ft3')}" placeholder="Teléfono">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-4 pt-4 border-t flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto" id="save-cfg-btn">Guardar</button>
+                        </div>
+                    </form>
+                `);
+            },
+            saveCertConfig: async function(formEl, cfgId) {
+                const btn = document.getElementById("save-cfg-btn");
+                if(btn) { btn.disabled = true; btn.textContent = "Guardando..."; }
+                
+                const uploadImg = async (file) => {
+                    if(!file) return null;
+                    const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", "ml_default_funetec");
+                    const r = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/image/upload", { method: "POST", body: fd });
+                    return (await r.json()).secure_url;
+                };
+
+                try {
+                    let f1url = formEl.elements.f1img.value;
+                    let f2url = formEl.elements.f2img.value;
+                    
+                    if(formEl.elements.f1file.files[0]) f1url = await uploadImg(formEl.elements.f1file.files[0]);
+                    if(formEl.elements.f2file.files[0]) f2url = await uploadImg(formEl.elements.f2file.files[0]);
+
+                    const data = {
+                        h1: formEl.elements.h1.value, h2: formEl.elements.h2.value,
+                        sh1: formEl.elements.sh1.value, sh2: formEl.elements.sh2.value,
+                        constar: formEl.elements.constar.value, aprobo: formEl.elements.aprobo.value,
+                        duracion: formEl.elements.duracion.value, vigencia: formEl.elements.vigencia.value,
+                        f1n: formEl.elements.f1n.value, f1r: formEl.elements.f1r.value, f1img: f1url,
+                        f2n: formEl.elements.f2n.value, f2r: formEl.elements.f2r.value, f2img: f2url,
+                        ft1: formEl.elements.ft1.value, ft2: formEl.elements.ft2.value, ft3: formEl.elements.ft3.value
+                    };
+                    
+                    if (cfgId) window.DB.update("cert_config", cfgId, data);
+                    else window.DB.add("cert_config", data);
+                    
+                    window.UI.closeModal();
+                    window.UI.showAlert("Configuración guardada exitosamente.");
+                } catch(e) {
+                    window.UI.showAlert("Error: " + e.message);
+                    if(btn) { btn.disabled = false; btn.innerHTML = "Guardar"; }
+                }
+            },
+            exportCertsData: function() {
+                const certs = window.DB.get("certificates");
+                const users = window.DB.get("users");
+                const courses = window.DB.get("courses");
+
+                let csvStr = "Nombre del Estudiante,Cedula,Nombre del Curso,Estado\n";
+
+                certs.forEach(cert => {
+                    const student = users.find(u => String(u.id) === String(cert.studentId));
+                    const course = courses.find(c => String(c.id) === String(cert.courseId));
+
+                    if (student && course) {
+                        const name = `"${student.name.replace(/"/g, '""')}"`;
+                        const doc = `"${student.document.replace(/"/g, '""')}"`;
+                        const courseName = `"${course.name.replace(/"/g, '""')}"`;
+                        let statusText = cert.status === "approved" ? "Aprobado" : (cert.status === "rejected" ? "Rechazado" : "Pendiente");
+
+                        csvStr += `${name},${doc},${courseName},${statusText}\n`;
+                    }
+                });
+
+                // Añadir BOM (Byte Order Mark) para forzar UTF-8 y que Excel lea correctamente los acentos y las eñes
+                const blob = new Blob(["\uFEFF" + csvStr], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "reporte_certificados_funetec.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            renderCerts: function(container) {
+                const certs = window.DB.get("certificates");
+                const users = window.DB.get("users");
+                const courses = window.DB.get("courses");
+                
+                let html = `
+                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="m-0">Certificados y Resultados</h3>
+                            <button class="btn btn-outline btn-sm" onclick="window.AdminViews.openCertConfigModal()">Diseño PDF</button>
+                            <button class="btn btn-success btn-sm" onclick="window.AdminViews.exportCertsData()">Exportar CSV</button>
+                        </div>
+                        <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar por estudiante o curso..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
+                    </div>
+                    <div class="card table-responsive">
+                        <table id="admin-certs-table">
+                            <thead><tr><th>Estudiante</th><th>Curso</th><th>Puntaje</th><th>Estado</th><th>Acciones</th></tr></thead>
+                            <tbody>
+                `;
+                
+                if (certs.length === 0) {
+                    html += '<tr><td colspan="5" class="text-center text-gray">No hay registros</td></tr>';
+                }
+                
+                certs.forEach((cert) => {
+                    const student = users.find((u) => String(u.id) === String(cert.studentId));
+                    const course = courses.find((c) => String(c.id) === String(cert.courseId));
+                    
+                    if (student && course) {
+                        const badgeClass = cert.status === "pending" ? "badge-warning" : cert.status === "approved" ? "badge-success" : "badge-danger";
+                        const statusText = cert.status === "pending" ? "Pendiente" : cert.status === "approved" ? "Aprobado" : "Rechazado";
+                        
+                        html += `
+                            <tr>
+                                <td>${student.name}</td>
+                                <td>${course.name}</td>
+                                <td><span class="font-bold">${cert.score}%</span></td>
+                                <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                                <td>
+                                    <div class="flex gap-2 flex-wrap">
+                                        <button class="btn btn-sm btn-outline" title="Ver Detalles Examen" onclick="window.AdminViews.viewExamDetails('${student.id}', '${course.id}')">Detalles</button>
+                                        ${cert.status === "pending" ? `
+                                            <button class="btn btn-sm btn-success" title="Aprobar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'approved')">Aprobar</button>
+                                            <button class="btn btn-sm btn-danger" title="Rechazar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'rejected')">Rechazar</button>
+                                        ` : cert.status === "approved" ? `
+                                            <button class="btn btn-sm btn-primary" title="Editar Certificado" onclick="window.AdminViews.openEditCertModal('${cert.id}', '${student.name.replace(/'/g, "\\\\'")}', '${course.name.replace(/'/g, "\\\\'")}')">Editar</button>
+                                            <button class="btn btn-sm btn-secondary" title="Descargar" onclick="window.StudentViews.viewDiploma('${course.name.replace(/'/g, "\\\\'")}', '${student.name.replace(/'/g, "\\\\'")}', '${cert.id}')">Descargar</button>
+                                        ` : ""}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+                
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            },
+            viewExamDetails: function(studentId, courseId) {
+                const results = window.DB.get("exam_results")
+                    .filter((r) => String(r.studentId) === String(studentId) && String(r.courseId) === String(courseId))
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                if (results.length === 0) {
+                    return window.UI.showAlert("No hay detalles del examen registrados (versión antigua).");
+                }
+                
+                const recentResult = results[0];
+                const detailsHtml = recentResult.details.map((d, idx) => `
+                    <div class="mb-4 p-4 rounded border ${d.esCorrecta ? "bg-bg border-success" : "border-danger"}" style="background: ${d.esCorrecta ? "var(--bg)" : "#fef2f2"}; border-left-width: 4px;">
+                        <p class="font-semibold mb-2 text-text">${idx + 1}. ${d.pregunta}</p>
+                        <p class="text-sm text-gray">Respuesta Usuario: <span class="font-semibold ${d.esCorrecta ? "text-success" : "text-danger"}">${d.respuestaUsuario}</span></p>
+                        ${d.esCorrecta ? "" : `<p class="text-sm text-gray">Respuesta Correcta: <span class="font-semibold text-success">${d.respuestaCorrecta}</span></p>`}
+                    </div>
+                `).join("");
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">Detalle del Examen</h3>
+                    <p class="mb-2"><strong>Puntaje Obtenido:</strong> <span class="font-bold text-primary">${recentResult.score}%</span></p>
+                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentación:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
+                    <div style="max-height: 400px; overflow-y: auto; padding-right:10px;">
+                        ${detailsHtml}
+                    </div>
+                    <div class="text-center mt-6">
+                        <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cerrar</button>
+                    </div>
+                `);
+            },
+            openEditCertModal: function(certId, defaultName, defaultCourse) {
+                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
+                if (!cert) return;
+                
+                const nameToShow = cert.overrideName || defaultName;
+                const courseToShow = cert.overrideCourse || defaultCourse;
+                const dateToShow = cert.overrideDate || new Date().toISOString().split("T")[0];
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">Editar Datos Impresos del Certificado</h3>
+                    <form onsubmit="event.preventDefault(); window.AdminViews.saveCertEdits('${certId}', this)">
+                        <div class="form-group">
+                            <label>Nombre a mostrar</label>
+                            <input type="text" name="name" class="form-control" value="${nameToShow}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Curso a mostrar</label>
+                            <input type="text" name="course" class="form-control" value="${courseToShow}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Emisión</label>
+                            <input type="date" name="date" class="form-control" value="${dateToShow}" required>
+                        </div>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar</button>
+                        </div>
+                    </form>
+                `);
+            },
+            saveCertEdits: function(certId, formEl) {
+                window.DB.update("certificates", certId, {
+                    overrideName: formEl.elements.name.value,
+                    overrideCourse: formEl.elements.course.value,
+                    overrideDate: formEl.elements.date.value
+                });
+                window.UI.closeModal();
+                window.Router.navigate("admin-certs");
+            },
+            updateCertStatus: function(certId, status) {
+                window.DB.update("certificates", certId, { status: status });
+                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
+                
+                const msg = status === "approved" 
+                    ? "¡Tu certificado ha sido aprobado y está listo para descargar!" 
+                    : "Tu solicitud de certificado fue rechazada.";
+                    
+                window.notifyUser(cert.studentId, msg);
+                window.Router.navigate("admin-certs");
+            }
+        };
+
+        window.StudentViews = {
+            renderDashboard: function(container) {
+                try {
+                    const studentId = String(window.State.currentUser.id);
+                    const enrollments = window.DB.get("enrollments").filter((e) => String(e.studentId) === studentId);
+                    const courses = window.DB.get("courses");
+                    const progresses = window.DB.get("progress");
+                    
+                    let html = `
+                        <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                            <h3 class="m-0">Mis Cursos Asignados</h3>
+                            <input type="text" class="form-control w-full sm:max-w-lg" placeholder="Buscar curso..." onkeyup="window.UIHelpers.filterGrid(this, 'student-courses-grid')">
+                        </div>
+                        <div class="course-grid" id="student-courses-grid">
+                    `;
+                    
+                    if (enrollments.length === 0) {
+                        html += '<p class="text-gray">No tienes cursos asignados aún.</p>';
+                    }
+                    
+                    enrollments.forEach((enrollment) => {
+                        const course = courses.find((c) => String(c.id) === String(enrollment.courseId));
+                        if (course) {
+                            const totalContents = window.DB.get("contents").filter((c) => String(c.courseId) === String(course.id)).length;
+                            const progress = progresses.find((p) => String(p.studentId) === studentId && String(p.courseId) === String(course.id));
+                            const completedCount = progress?.completedContentIds?.length || 0;
+                            const percentage = totalContents === 0 ? 0 : Math.round((completedCount / totalContents) * 100);
+                            
+                            const cName = course.name || "Curso no especificado";
+                            const cNameShort = cName.length >= 2 ? cName.substring(0, 2).toUpperCase() : "CU";
+                            
+                            const placeholderImg = `https://via.placeholder.com/300x160/f9fafb/6b7280?text=${encodeURIComponent(cNameShort)}`;
+                            const imgHtml = course.imageUrl 
+                                ? `<img src="${course.imageUrl}" alt="Portada" onerror="this.onerror=null; this.src='${placeholderImg}'">` 
+                                : `<span class="font-bold opacity-50" style="font-size: 2.5rem;">${cNameShort}</span>`;
+                                
+                            html += `
+                                <div class="course-card">
+                                    <div class="course-img">${imgHtml}</div>
+                                    <div class="course-body">
+                                        <div>
+                                            <h4 class="course-title">${cName}</h4>
+                                            <div class="progress-container">
+                                                <div class="progress-bar" style="width: ${percentage}%"></div>
+                                            </div>
+                                            <p class="text-sm text-gray text-right font-bold">${percentage}% Completado</p>
+                                        </div>
+                                        <div class="action-grid cols-1 m-0 p-0 border-none">
+                                            <button class="btn-card primary" onclick="window.Router.navigate('student-course', {id: '${course.id}'})">
+                                                <span>Continuar Curso</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    html += `</div>`;
+                    container.innerHTML = html;
+                } catch (error) {
+                    console.error("Error crítico renderizando Dashboard de Estudiante:", error);
+                    container.innerHTML = `<div class="p-6 text-center text-danger bg-white border border-danger rounded shadow"><h3 class="mb-2">Ha ocurrido un error</h3><p>La carga de los cursos ha fallado. Por favor notifique al administrador.</p></div>`;
+                }
+            },
+            renderCourse: function(container, courseIdStr) {
+                const courseId = String(courseIdStr);
+                const studentId = String(window.State.currentUser.id);
+                const course = window.DB.get("courses").find((c) => String(c.id) === courseId);
+                if (!course) {
+                    container.innerHTML = `<div style="display:none;">Curso no encontrado</div>`;
+                    return;
+                }
+
+                const contents = window.DB.get("contents").filter((c) => String(c.courseId) === courseId);
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === courseId);
+                
+                let progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === courseId);
+                if (!progress) {
+                    progress = {
+                        studentId: studentId,
+                        courseId: courseId,
+                        completedContentIds: [],
+                        intentos: 0,
+                        estadoExamen: "pendiente"
+                    };
+                    window.DB.add("progress", progress);
+                }
+                
+                const completedIds = progress.completedContentIds || [];
+                let currentContentIndex = contents.findIndex((c) => !completedIds.includes(String(c.id)));
+                if (currentContentIndex === -1) currentContentIndex = 0;
+                
+                const currentContent = contents[currentContentIndex];
+                const percentage = contents.length === 0 ? 0 : Math.round((completedIds.length / contents.length) * 100);
+                const canTakeExam = percentage === 100 && exam;
+                const certificate = window.DB.get("certificates").find((c) => String(c.studentId) === studentId && String(c.courseId) === courseId);
+                
+                let examHtml = "";
+                if (canTakeExam) {
+                    if (progress.estadoExamen === "aprobado" || certificate) {
+                        examHtml = `
+                            <p class="mb-4">Has aprobado satisfactoriamente la evaluación final de este curso.</p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card success" onclick="window.Router.navigate('student-certs')">
+                                    <span>Ir a Mis Certificados</span>
+                                </button>
+                            </div>
+                        `;
+                    } else if (progress.estadoExamen === "reprobado") {
+                        examHtml = `
+                            <p class="mb-4 text-danger font-bold">Intento fallido. Tienes ${progress.intentos} intento(s) registrados.</p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card warning" onclick="window.StudentViews.requestExamRepeat('${courseId}')">
+                                    <span>Solicitar repetir examen</span>
+                                </button>
+                            </div>
+                        `;
+                    } else if (progress.estadoExamen === "solicitado") {
+                        examHtml = `
+                            <p class="mb-4 text-warning font-bold">Tu solicitud ha sido enviada.</p>
+                            <p class="text-sm text-gray">Espera a que el administrador habilite nuevamente el examen para ti.</p>
+                        `;
+                    } else {
+                        examHtml = `
+                            <p class="mb-4">Estás listo para presentar la evaluación final.</p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card primary" onclick="window.Router.navigate('student-exam', {id: '${courseId}'})">
+                                    <span>Presentar Examen</span>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+                
+                const cName = course.name || "Curso no especificado";
+                const cDesc = course.description || "";
+
+                let mainHtml = `
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2 mobile-stack">
+                            <h2 class="font-bold text-text" style="font-size: 1.5rem;">${cName}</h2>
+                            <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('student-dashboard')">Volver</button>
+                        </div>
+                        <p class="text-gray mb-4" style="font-size: 1rem; line-height: 1.6;">${cDesc}</p>
+                        <div class="progress-container mb-2" style="height: 12px;">
+                            <div class="progress-bar bg-success" style="width: ${percentage}%;"></div>
+                        </div>
+                        <p class="text-right text-sm text-gray font-bold mb-4">Tu progreso: ${percentage}%</p>
+                    </div>
+
+                    <div class="course-view-layout">
+                        <div class="flex-col gap-4 w-full">
+                            <div class="video-container" id="player-area">
+                                ${currentContent ? window.StudentViews.generatePlayerHtml(currentContent) : '<div class="w-full text-center p-6 bg-bg"><p class="text-gray font-bold">Seleccione un contenido del temario para comenzar</p></div>'}
+                            </div>
+
+                            <div id="btn-container-area">
+                                ${currentContent && !completedIds.includes(String(currentContent.id)) ? `
+                                    <div class="action-grid cols-1 m-0 p-0 border-none">
+                                        <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${currentContent.id}')">
+                                            <span>Marcar módulo como completado</span>
+                                        </button>
+                                    </div>
+                                ` : ""}
+                            </div>
+
+                            ${canTakeExam ? `
+                                <div class="card text-center mt-4 border ${progress.estadoExamen === "reprobado" ? "border-danger" : "border-success"} w-full" style="background: ${progress.estadoExamen === "reprobado" ? "#fef2f2" : "var(--white)"}; box-sizing:border-box; word-break:break-word;">
+                                    <h4 class="${progress.estadoExamen === "reprobado" ? "text-danger" : "text-primary"} mb-2 font-bold" style="font-size:1.2rem;">Evaluación Final</h4>
+                                    ${examHtml}
+                                </div>
+                            ` : ""}
+                        </div>
+
+                        <div class="content-list" style="align-self: start; max-height: 500px; overflow-y: auto;">
+                            <div class="p-4 bg-bg font-bold border-b text-text">Temario del curso</div>
+                            ${contents.map((c, idx) => {
+                                const isCompleted = completedIds.includes(String(c.id));
+                                return `
+                                    <div class="content-item ${currentContent && String(currentContent.id) === String(c.id) ? "active" : ""} ${isCompleted ? "completed" : ""}"
+                                         onclick="window.StudentViews.changeContent('${courseId}', '${c.id}', event)">
+                                        <span class="title">${idx + 1}. ${c.title}</span>
+                                        ${isCompleted ? `<span class="flex text-success">${window.Icons.check}</span>` : ""}
+                                    </div>
+                                `;
+                            }).join("")}
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML = mainHtml;
+            },
+            requestExamRepeat: function(courseId) {
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                
+                if (progress) {
+                    window.DB.update("progress", progress.id, { estadoExamen: "solicitado" });
+                    window.UI.showAlert("Se ha enviado la solicitud de repetición de examen al administrador.");
+                    window.Router.navigate("student-course", { id: courseId });
+                }
+            },
+            generatePlayerHtml: function(content) {
+                if (content.type === "video") {
+                    const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+                    const match = content.url.match(ytRegex);
+                    const videoId = match ? match[1] : null;
+                    
+                    if (videoId) {
+                        return `
+                            <div class="video-wrapper" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0\\' allow=\\'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\\' allowfullscreen></iframe>'; this.style.cursor='default';">
+                                <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" class="video-thumbnail" alt="Video Thumbnail" onerror="this.src='https://img.youtube.com/vi/${videoId}/hqdefault.jpg'">
+                                <div class="video-overlay-main"></div>
+                                <div class="play-button">${window.Icons.play}</div>
+                            </div>
+                        `;
+                    }
+                    return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                }
+                
+                return `
+                    <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text" style="min-height: 300px;">
+                        <h3 class="mb-4">Enlace Externo / Documento</h3>
+                        <a href="${content.url}" target="_blank" class="btn btn-primary btn-lg w-full sm:w-auto">Abrir en nueva pestaña</a>
+                    </div>
+                `;
+            },
+            changeContent: function(courseId, contentId, event) {
+                const content = window.DB.get("contents")
+                    .filter((c) => String(c.courseId) === String(courseId))
+                    .find((c) => String(c.id) === String(contentId));
+                    
+                const playerArea = document.getElementById("player-area");
+                if (playerArea && content) {
+                    playerArea.innerHTML = window.StudentViews.generatePlayerHtml(content);
+                }
+                
+                document.querySelectorAll(".content-item").forEach((el) => el.classList.remove("active"));
+                if (event && event.currentTarget) {
+                    event.currentTarget.classList.add("active");
+                }
+                
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                
+                const btnArea = document.getElementById("btn-container-area");
+                if (btnArea) {
+                    const completedIds = progress?.completedContentIds || [];
+                    if (completedIds.includes(String(contentId))) {
+                        btnArea.innerHTML = "";
+                    } else {
+                        btnArea.innerHTML = `
+                            <div class="action-grid cols-1 m-0 p-0 border-none">
+                                <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${contentId}')">
+                                    <span>Marcar módulo como completado</span>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            },
+            markCompleted: function(courseId, contentId) {
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                
+                const completedIds = progress?.completedContentIds || [];
+                if (progress && !completedIds.includes(String(contentId))) {
+                    const newIds = [...completedIds, String(contentId)];
+                    window.DB.update("progress", progress.id, { 
+                        completedContentIds: newIds, 
+                        estadoExamen: "pendiente" 
+                    });
+                }
+                window.Router.navigate("student-course", { id: courseId });
+            },
+            renderExam: function(container, courseId) {
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
+                const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
+                
+                let shuffledQuestions = (exam?.questions || []).map((q, qIndex) => {
+                    let options = q.options.map((text, oIndex) => ({ text, isCorrect: oIndex === q.correctIdx }));
+                    window.shuffleArray(options);
+                    let newCorrectIdx = options.findIndex((o) => o.isCorrect);
+                    
+                    return {
+                        originalQIndex: qIndex,
+                        q: q.q,
+                        options: options.map((o) => o.text),
+                        correctIdx: newCorrectIdx
+                    };
+                });
+                
+                window.shuffleArray(shuffledQuestions);
+                window.tempStudentExam = { passScore: exam?.passScore || 60, questions: shuffledQuestions };
+                
+                let html = `
+                    <div class="card mx-auto max-w-lg w-full overflow-x-hidden" style="box-sizing:border-box;">
+                        <div class="flex justify-between items-center mb-4 mobile-stack">
+                            <h3 class="m-0">Evaluación: ${course?.name || "Curso"}</h3>
+                            <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('student-course', {id: '${courseId}'})">Volver</button>
+                        </div>
+                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo para aprobar: <strong>${window.tempStudentExam.passScore}%</strong></p>
+
+                        <form id="exam-form" onsubmit="event.preventDefault(); window.StudentViews.submitExam('${courseId}')">
+                            ${window.tempStudentExam.questions.map((q, idx) => `
+                                <div class="mb-6 p-4 bg-bg rounded">
+                                    <h4 class="mb-3 text-text">${idx + 1}. ${q.q}</h4>
+                                    ${q.options.map((opt, oIdx) => `
+                                        <div class="mb-2 flex items-center gap-2 cursor-pointer text-gray">
+                                            <input type="radio" name="q_${idx}" value="${oIdx}" required style="transform: scale(1.2);">
+                                            <span style="word-break:break-word;">${opt}</span>
+                                        </div>
+                                    `).join("")}
+                                </div>
+                            `).join("")}
+                            <button type="submit" class="btn btn-primary btn-lg w-full mt-4" id="submit-exam-btn">Enviar Respuestas</button>
+                        </form>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            },
+            submitExam: function(courseId) {
+                const submitBtn = document.getElementById("submit-exam-btn");
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "Enviando...";
+                }
+                
+                const formEl = document.getElementById("exam-form");
+                let correctCount = 0;
+                let details = [];
+                
+                window.tempStudentExam.questions.forEach((q, idx) => {
+                    const selectedInput = formEl.elements[`q_${idx}`];
+                    const val = selectedInput ? selectedInput.value : null;
+                    const isCorrect = val !== null && parseInt(val) === q.correctIdx;
+                    
+                    if (isCorrect) correctCount++;
+                    
+                    details.push({
+                        pregunta: q.q,
+                        respuestaUsuario: val !== null ? q.options[parseInt(val)] : "Sin responder",
+                        respuestaCorrecta: q.options[q.correctIdx],
+                        esCorrecta: isCorrect
+                    });
+                });
+                
+                const percentage = window.tempStudentExam.questions.length > 0 
+                    ? Math.round((correctCount / window.tempStudentExam.questions.length) * 100)
+                    : 0;
+                const passed = percentage >= window.tempStudentExam.passScore;
+                const studentId = String(window.State.currentUser.id);
+                
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                const attempts = progress?.intentos ? progress.intentos + 1 : 1;
+                
+                if (progress) {
+                    window.DB.update("progress", progress.id, { 
+                        intentos: attempts, 
+                        estadoExamen: passed ? "aprobado" : "reprobado" 
+                    });
+                }
+                
+                window.DB.add("exam_results", {
+                    studentId: studentId,
+                    courseId: String(courseId),
+                    score: percentage,
+                    date: new Date().toISOString(),
+                    details: details
+                });
+                
+                let modalHtml = `
+                    <div class="text-center">
+                        <h2 class="mb-2 ${passed ? "text-success" : "text-danger"}">Calificación: ${percentage}%</h2>
+                        <p class="mb-4 text-gray">Respondiste correctamente ${correctCount} de ${window.tempStudentExam.questions.length} preguntas.</p>
+                `;
+                
+                if (passed) {
+                    modalHtml += `
+                        <div class="p-4 mb-4 rounded" style="background: #d1fae5;">
+                            <h4 class="text-success">¡Aprobado!</h4>
+                            <p>Tu solicitud de certificado ha sido enviada al administrador para su revisión.</p>
+                        </div>
+                        <div class="action-grid cols-1">
+                            <button class="btn-card primary" onclick="window.UI.closeModal(); window.Router.navigate('student-certs')">
+                                <span>Ir a Mis Certificados</span>
+                            </button>
+                        </div>
+                    `;
+                    
+                    window.DB.add("certificates", {
+                        studentId: studentId,
+                        courseId: String(courseId),
+                        status: "pending",
+                        score: percentage
+                    });
+                    
+                    const adminUser = window.DB.get("users").find((u) => u.role === "admin");
+                    if (adminUser) {
+                        window.notifyUser(adminUser.id, `${window.State.currentUser.name} ha aprobado un examen. Certificado pendiente de revisión.`);
+                    }
+                } else {
+                    modalHtml += `
+                        <div class="p-4 mb-4 rounded" style="background: #fee2e2;">
+                            <h4 class="text-danger">No Aprobado</h4>
+                            <p>Necesitas al menos ${window.tempStudentExam.passScore}% para aprobar.</p>
+                        </div>
+                        <div class="action-grid cols-1">
+                            <button class="btn-card secondary" onclick="window.UI.closeModal(); window.Router.navigate('student-course', {id: '${courseId}'})">
+                                <span>Volver al curso</span>
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                modalHtml += `</div>`;
+                window.UI.showModal(modalHtml);
+            },
+            renderCerts: function(container) {
+                const studentId = String(window.State.currentUser.id);
+                const certs = window.DB.get("certificates").filter((c) => String(c.studentId) === studentId);
+                const courses = window.DB.get("courses");
+                
+                let html = `
+                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
+                        <h3 class="m-0">Mis Certificados</h3>
+                    </div>
+                    <div class="course-grid">
+                `;
+                
+                if (certs.length === 0) {
+                    html += '<p class="text-gray">No tienes certificados aún. Completa un curso y aprueba el examen.</p>';
+                }
+                
+                certs.forEach((cert) => {
+                    const course = courses.find((c) => String(c.id) === String(cert.courseId));
+                    if (course) {
+                        const topColor = cert.status === "approved" ? "var(--success)" : cert.status === "rejected" ? "var(--danger)" : "var(--warning)";
+                        const cName = course.name || "Curso no especificado";
+
+                        html += `
+                            <div class="card text-center flex-col justify-between" style="border-top: 4px solid ${topColor};">
+                                <div>
+                                    <h4 class="mb-2 text-text">${cName}</h4>
+                                    <p class="text-sm text-gray mb-2">Puntaje obtenido: ${cert.score}%</p>
+                                </div>
+                        `;
+                        
+                        if (cert.status === "pending") {
+                            html += `
+                                <div>
+                                    <span class="badge badge-warning mb-4 inline-block">En Revisión</span>
+                                    <p class="text-xs text-gray">Esperando aprobación del administrador.</p>
+                                </div>
+                            `;
+                        } else if (cert.status === "rejected") {
+                            html += `
+                                <div>
+                                    <span class="badge badge-danger mb-4 inline-block">Rechazado</span>
+                                    <p class="text-xs text-gray">Comunícate con soporte.</p>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div>
+                                    <span class="badge badge-success mb-4 inline-block">Aprobado</span>
+                                    <div class="action-grid cols-1 m-0 p-0 border-none">
+                                        <button class="btn-card primary" onclick="window.StudentViews.viewDiploma('${cName.replace(/'/g, "\\\\'")}', '${window.State.currentUser.name.replace(/'/g, "\\\\'")}', '${cert.id}')">
+                                            <span>Ver Diploma</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        html += `</div>`;
+                    }
+                });
+                
+                html += `</div>`;
+                container.innerHTML = html;
+            },
+            viewDiploma: function(courseName, studentName, certId) {
+                window.UI.showAlert("Generando certificado en PDF, por favor espera...");
+                window.StudentViews.generateCertificatePDF({ courseName, studentName, certId });
+            },
+            generateCertificatePDF: function(data) {
+                const { courseName, studentName, certId } = data;
+                const cert = window.DB.get("certificates").find(c => String(c.id) === String(certId)) || {};
+                const user = window.DB.get("users").find(u => String(u.id) === String(cert.studentId)) || {};
+                const courseObj = window.DB.get("courses").find(c => String(c.id) === String(cert.courseId)) || {};
+                const docId = user.document || "No registrado";
+                const cHours = courseObj.hours || 48;
+                
+                const d = cert.overrideDate ? new Date(cert.overrideDate + "T00:00:00") : new Date();
+                const dStr = `Dado en Barranquilla, a los ${d.getDate()} de ${["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][d.getMonth()]} de ${d.getFullYear()}`;
+                
+                const fName = (cert.overrideName || studentName).toUpperCase();
+                const fCourse = (cert.overrideCourse || courseName).toUpperCase();
+
+                const loadJsPdf = () => window.jspdf ? Promise.resolve() : new Promise((res, rej) => {
+                    const s = document.createElement("script");
+                    s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+                    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+                });
+
+                const getB64 = (url) => new Promise(res => {
+                    if(!url) return res(null);
+                    const img = new Image(); img.crossOrigin = "Anonymous";
+                    img.onload = () => {
+                        const cvs = document.createElement("canvas"); cvs.width = img.width; cvs.height = img.height;
+                        cvs.getContext("2d").drawImage(img, 0, 0); res(cvs.toDataURL("image/png"));
+                    };
+                    img.onerror = () => res(null); img.src = url;
+                });
+
+                const cfg = window.DB.get("cert_config")[0] || {};
+                const defs = {
+                    h1: "Institución de Educación", h2: "para el Trabajo y Desarrollo Humano",
+                    sh1: "Aprobado por la Secretaria de Educación Distrital de Barranquilla mediante Resolución N° 06077 del 19 de octubre de 2023.",
+                    sh2: "Educación para el Trabajo y Desarrollo Humano.", constar: "Hace constar que :",
+                    aprobo: "Aprobó el curso de:", duracion: "Con una duración de ( {horas} horas).",
+                    vigencia: "( vigencia 2 años )", f1n: "KELLY PATRICIA REYES UTRIA", f1r: "Directora",
+                    f2n: "NEDIS FERNANDEZ BARRANCO", f2r: "Coordinadora Académica",
+                    ft1: "funetec2022@gmail.com", ft2: "calle 47#18_24 Barranquilla", ft3: "3046781679"
+                };
+                const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
+
+                Promise.all([
+                    loadJsPdf(), 
+                    getB64(val('f1img')), 
+                    getB64(val('f2img')),
+                    getB64('https://image2url.com/r2/default/images/1775071648590-9b1104bf-6774-470c-bcb6-9672d743f144.png'), // email icon
+                    getB64('https://image2url.com/r2/default/images/1775071789052-124cd7a8-b4d7-4cc4-be4b-292c9219cfa1.avif'), // map icon
+                    getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg'),  // phone icon
+                    getB64('https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg')   // Logo principal
+                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon, mainLogo]) => {
+                    const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
+                    const cX = 148.5; 
+                    
+                    const T = (txt, y, sz, fnt="helvetica", st="normal", clr=0, x=cX, al="center") => {
+                        pdf.setTextColor(clr); pdf.setFont(fnt, st); pdf.setFontSize(sz);
+                        pdf.text(txt, x, y, { align: al });
+                    };
+
+                    // Logo
+                    if (mainLogo) {
+                        pdf.addImage(mainLogo, "PNG", cX - 17.5, 8, 35, 35);
+                    } else {
+                        pdf.setFillColor(153, 27, 27); pdf.rect(cX-10, 15, 5, 18, 'F');
+                        pdf.setFillColor(225, 29, 42); pdf.rect(cX-3, 10, 5, 23, 'F');
+                        pdf.setFillColor(252, 165, 165); pdf.rect(cX+4, 15, 5, 18, 'F');
+                        T("FUNETEC", 38, 12, "helvetica", "bold");
+                    }
+
+                    // Textos principales
+                    T(val('h1'), 55, 26, "times", "bold");
+                    T(val('h2'), 65, 26, "times", "bold");
+                    T(val('sh1'), 75, 10, "helvetica", "normal", 50);
+                    T(val('sh2'), 80, 10, "helvetica", "normal", 50);
+                    T(val('constar'), 95, 14);
+                    T(fName, 115, 32, "times", "bold");
+                    T(`Identificado con cédula de ciudadanía N.º ${docId}`, 125, 11);
+                    T(val('aprobo'), 140, 14);
+                    T(fCourse, 155, 28, "times", "bold");
+                    
+                    let durText = val('duracion') || "";
+                    if (durText.includes('{horas}')) durText = durText.replace('{horas}', cHours);
+                    else durText = durText.replace('48', cHours);
+
+                    T(durText, 170, 11, "helvetica", "normal", 50);
+                    T(dStr, 176, 11, "helvetica", "normal", 50);
+                    T(val('vigencia'), 182, 11, "helvetica", "normal", 50);
+
+                    // Firmas (Con imágenes)
+                    pdf.setDrawColor(0); pdf.setLineWidth(0.5);
+                    
+                    // Firma 1
+                    pdf.line(40, 180, 110, 180);
+                    if(s1b64) pdf.addImage(s1b64, "PNG", 50, 155, 50, 24);
+                    T(val('f1n'), 185, 9, "helvetica", "bold", 0, 75);
+                    T(val('f1r'), 190, 9, "helvetica", "normal", 0, 75);
+
+                    // Firma 2
+                    pdf.line(187, 180, 257, 180);
+                    if(s2b64) pdf.addImage(s2b64, "PNG", 197, 155, 50, 24);
+                    T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
+                    T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
+
+                    // Footer con los iconos correctos cargados externamente
+                    const footerData = [
+                        { x: 45, text: val('ft1'), icon: emailIcon },
+                        { x: 120, text: val('ft2'), icon: mapIcon },
+                        { x: 215, text: val('ft3'), icon: phoneIcon }
+                    ];
+
+                    footerData.forEach(f => {
+                        if (f.icon) {
+                            // Se ubica el icono de forma centrada donde iba el circulo rojo original (f.x, 198)
+                            pdf.addImage(f.icon, "PNG", f.x - 3, 195, 6, 6);
+                        } else {
+                            // Fallback de seguridad en caso de que la imagen no cargue
+                            pdf.setFillColor(225, 29, 42); 
+                            pdf.circle(f.x, 198, 2.5, 'F');
+                        }
+                        T(f.text, 199.5, 9, "helvetica", "bold", 50, f.x + 5, "left");
+                    });
+
+                    pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
+                    window.UI.closeModal();
+
+                }).catch(() => window.UI.showAlert("Error al generar PDF. Revise su conexión."));
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            try {
+                const loadingEl = document.getElementById("loading-db");
+                const formEl = document.getElementById("login-form");
+                
+                if (formEl) {
+                    formEl.addEventListener("submit", (e) => {
+                        e.preventDefault();
+                        const docVal = document.getElementById("login-document")?.value || "";
+                        const passVal = document.getElementById("login-password")?.value || "";
+                        window.Auth.login(docVal, passVal);
+                    });
+                }
+                
+                if (window.SafeStorage.getItem("currentUser")) {
+                    if (loadingEl) {
+                        loadingEl.classList.remove("hidden");
+                        loadingEl.textContent = "Verificando sesión...";
+                    }
+                    if (formEl) formEl.classList.add("hidden");
+                    
+                    window.DB.init((err) => {
+                        if (loadingEl) loadingEl.classList.add("hidden");
+                        
+                        if (err) {
+                            console.warn("Fallo al verificar con Firebase. Forzando cierre local.");
+                            window.Auth.logout();
+                        } else {
+                            window.Auth.checkSession();
+                        }
+                    });
+                } else {
+                    if (loadingEl) loadingEl.classList.add("hidden");
+                    window.App.showLogin();
+                    window.DB.init();
+                }
+            } catch (error) {
+                console.error("Error en la inicialización de DOMContentLoaded:", error);
+            }
+        });
+    </script>
+</body>
+</html>
