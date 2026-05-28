@@ -1457,7 +1457,7 @@
                                 formData.append("file", file);
                                 formData.append("upload_preset", "ml_default_funetec");
                                 
-                                const res = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/auto/upload", {
+                                const res = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/raw/upload", {
                                     method: "POST",
                                     body: formData
                                 });
