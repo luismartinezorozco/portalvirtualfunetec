@@ -295,6 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
+                    <p class="text-center text-xs text-gray mt-4">Versión 1.1</p>
                 </form>
             </div>
         </div>
@@ -360,7 +361,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         window.State = { currentUser: null };
         window.currentRoute = { id: null, params: {} };
@@ -408,8 +408,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
-        window.FBStorage = { storage, ref, uploadBytes, getDownloadURL };
         
         const appId = typeof __app_id !== "undefined" ? __app_id : "funetec-lms";
 
@@ -1436,36 +1434,20 @@
                             const file = fileInput.files[0];
                             if (file.type !== "application/pdf") throw new Error("El archivo debe ser un PDF válido.");
                             
-                            if (saveBtn) saveBtn.textContent = "Subiendo PDF... (Por favor espera)";
+                            if (saveBtn) saveBtn.textContent = "Subiendo PDF...";
                             
-                            const safeFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                            const fileRef = window.FBStorage.ref(window.FBStorage.storage, `pdfs/${Date.now()}_${safeFileName}`);
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("upload_preset", "ml_default_funetec");
                             
-                            const uploadTask = window.FBStorage.uploadBytes(fileRef, file);
-                            const timeoutTask = new Promise((_, reject) => {
-                                setTimeout(() => reject(new Error("Tiempo de espera agotado en Firebase.")), 10000);
+                            const res = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/raw/upload", {
+                                method: "POST",
+                                body: formData
                             });
                             
-                            try {
-                                await Promise.race([uploadTask, timeoutTask]);
-                                finalUrl = await window.FBStorage.getDownloadURL(fileRef);
-                            } catch (storageError) {
-                                console.warn("Firebase Storage falló (CORS/Reglas), usando Cloudinary de respaldo:", storageError);
-                                if (saveBtn) saveBtn.textContent = "Subiendo por servidor de respaldo...";
-                                
-                                const formData = new FormData();
-                                formData.append("file", file);
-                                formData.append("upload_preset", "ml_default_funetec");
-                                
-                                const res = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/raw/upload", {
-                                    method: "POST",
-                                    body: formData
-                                });
-                                
-                                if (!res.ok) throw new Error("La subida falló tanto en Firebase como en el servidor de respaldo.");
-                                const data = await res.json();
-                                finalUrl = data.secure_url;
-                            }
+                            if (!res.ok) throw new Error("Error al subir el archivo PDF a la nube.");
+                            const data = await res.json();
+                            finalUrl = data.secure_url;
                             
                         } else {
                             finalUrl = existingUrl;
@@ -2096,7 +2078,6 @@
                     return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
                 }
                 
-                // Vista externa para PDF restaurada
                 return `
                     <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
                         <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
