@@ -372,6 +372,7 @@
         };
         
         window.dbInitialized = false;
+        window.dbInitError = null;
 
         window.SafeStorage = {
             memory: {},
@@ -398,7 +399,6 @@
         try {
             if (typeof __firebase_config !== "undefined" && __firebase_config) {
                 const configStr = JSON.parse(__firebase_config);
-                // Si la plataforma de previsualización inyecta credenciales, forzamos mantener TU bucket de storage
                 if (Object.keys(configStr).length > 0) {
                     firebaseConfig = { ...configStr, storageBucket: "funetec-equalsby-oficial.firebasestorage.app" };
                 }
@@ -442,10 +442,12 @@
 
         window.DB = {
             init: async function(callback) {
+                window.dbInitError = null;
                 let isResolved = false;
                 const safeCallback = (err) => {
                     if (!isResolved && callback) {
                         isResolved = true;
+                        if (err) window.dbInitError = err;
                         callback(err);
                     }
                 };
@@ -556,6 +558,19 @@
                 }
             },
             login: function(identifier, password) {
+                if (window.dbInitError) {
+                    const errorEl = document.getElementById("login-error");
+                    if (errorEl) {
+                        let msg = window.dbInitError.message || "Error desconocido";
+                        if (msg.includes("operation-not-allowed")) msg = "Debes habilitar el proveedor 'Anónimo' en Firebase Auth.";
+                        else if (msg.includes("Missing or insufficient permissions") || msg.includes("permission-denied")) msg = "Las reglas de Firestore están bloqueando el acceso.";
+                        
+                        errorEl.innerHTML = `<b>Fallo de conexión Firebase:</b><br>${msg}`;
+                        errorEl.classList.remove("hidden");
+                    }
+                    return;
+                }
+                
                 if (!window.dbInitialized) {
                     const errorEl = document.getElementById("login-error");
                     if (errorEl) {
@@ -2514,7 +2529,18 @@
                 } else {
                     if (loadingEl) loadingEl.classList.add("hidden");
                     window.App.showLogin();
-                    window.DB.init();
+                    window.DB.init((err) => {
+                        if (err) {
+                            const errorEl = document.getElementById("login-error");
+                            if (errorEl) {
+                                let msg = err.message || "Error al conectar.";
+                                if (msg.includes("operation-not-allowed")) msg = "Habilita Auth Anónimo en Firebase.";
+                                else if (msg.includes("permission-denied") || msg.includes("Missing or insufficient permissions")) msg = "Faltan permisos en Reglas de Firestore.";
+                                errorEl.innerHTML = `<b>Atención:</b> ${msg}`;
+                                errorEl.classList.remove("hidden");
+                            }
+                        }
+                    });
                 }
             } catch (error) {
                 console.error("Error en la inicialización de DOMContentLoaded:", error);
