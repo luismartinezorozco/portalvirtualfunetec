@@ -295,7 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 1.9</p>
+                    <p class="text-center text-xs text-gray mt-4">Versión 2.0</p>
                 </form>
             </div>
         </div>
@@ -1464,6 +1464,7 @@
                         <div class="content-item mobile-stack">
                             <span class="mb-2 w-full"><strong>${idx + 1}.</strong> ${content.title} <span class="badge badge-secondary ml-2">${content.type}</span></span>
                             <div class="flex gap-2 w-full sm:w-auto">
+                                ${content.type === 'taller' ? `<button class="btn btn-outline btn-sm flex-1" onclick="window.AdminViews.openTallerModal('${courseId}', '${content.id}')">Preguntas</button>` : ''}
                                 <button class="btn btn-outline btn-sm flex-1" onclick="window.AdminViews.openContentModal('${courseId}', '${content.id}')">Editar</button>
                                 <button class="btn btn-danger btn-sm flex-1" onclick="window.AdminViews.confirmDeleteContent('${content.id}', '${courseId}')">Eliminar</button>
                             </div>
@@ -1494,21 +1495,24 @@
             openContentModal: function(courseId, contentId = null) {
                 const content = contentId ? window.DB.get("contents").find((c) => String(c.id) === String(contentId)) : null;
                 const isPdf = content?.type === "pdf";
+                const isTaller = content?.type === "taller";
                 const existingUrl = content?.url || "";
                 
                 window.AdminViews.toggleContentInputs = function(selectEl) {
                     const type = selectEl.value;
                     const urlGroup = document.getElementById("url-input-group");
                     const fileGroup = document.getElementById("file-input-group");
+                    
+                    urlGroup.style.display = "none";
+                    fileGroup.style.display = "none";
+                    document.getElementById("content-url").required = false;
+                    document.getElementById("content-file").required = false;
+                    
                     if(type === "video") {
                         urlGroup.style.display = "block";
-                        fileGroup.style.display = "none";
                         document.getElementById("content-url").required = true;
-                        document.getElementById("content-file").required = false;
-                    } else {
-                        urlGroup.style.display = "none";
+                    } else if(type === "pdf") {
                         fileGroup.style.display = "block";
-                        document.getElementById("content-url").required = false;
                         document.getElementById("content-file").required = !document.getElementById("existing-content-url").value;
                     }
                 };
@@ -1523,17 +1527,18 @@
                         <div class="form-group">
                             <label>Tipo</label>
                             <select name="type" class="form-control" required onchange="window.AdminViews.toggleContentInputs(this)">
-                                <option value="video" ${!isPdf ? "selected" : ""}>Video</option>
+                                <option value="video" ${!isPdf && !isTaller ? "selected" : ""}>Video</option>
                                 <option value="pdf" ${isPdf ? "selected" : ""}>PDF</option>
+                                <option value="taller" ${isTaller ? "selected" : ""}>Taller (Cuestionario)</option>
                             </select>
                         </div>
-                        <div class="form-group" id="url-input-group" style="${isPdf ? 'display:none;' : 'display:block;'}">
+                        <div class="form-group" id="url-input-group" style="${!isPdf && !isTaller ? 'display:block;' : 'display:none;'}">
                             <label>URL del Video (YouTube)</label>
-                            <input type="url" name="url" id="content-url" class="form-control" value="${isPdf ? '' : existingUrl}" ${!isPdf ? "required" : ""} placeholder="https://www.youtube.com/watch?v=...">
+                            <input type="url" name="url" id="content-url" class="form-control" value="${!isPdf && !isTaller ? existingUrl : ''}" ${!isPdf && !isTaller ? "required" : ""} placeholder="https://www.youtube.com/watch?v=...">
                         </div>
                         <div class="form-group" id="file-input-group" style="${isPdf ? 'display:block;' : 'display:none;'}">
                             <label>Subir Archivo PDF</label>
-                            <input type="file" name="file" id="content-file" class="form-control" accept="application/pdf" ${isPdf && existingUrl ? "" : (!isPdf ? "" : "required")}>
+                            <input type="file" name="file" id="content-file" class="form-control" accept="application/pdf" ${isPdf && existingUrl ? "" : (isPdf ? "required" : "")}>
                             <input type="hidden" name="existingUrl" id="existing-content-url" value="${existingUrl}">
                             ${isPdf && existingUrl ? '<div class="mt-2 text-sm text-gray">Archivo actual cargado. Sube uno nuevo para reemplazarlo.</div>' : ''}
                         </div>
@@ -1563,7 +1568,7 @@
                             const file = fileInput.files[0];
                             if (file.type !== "application/pdf") throw new Error("El archivo debe ser un PDF válido.");
                             
-                            if (saveBtn) saveBtn.textContent = "Subiendo PDF...";
+                            if (saveBtn) saveBtn.textContent = "Subiendo PDF a Supabase...";
                             
                             finalUrl = await uploadPdfToSupabase(file, courseId);
                             
@@ -1571,12 +1576,19 @@
                             finalUrl = existingUrl;
                             if (!finalUrl) throw new Error("Debe subir un archivo PDF.");
                         }
+                    } else if (type === "taller") {
+                        finalUrl = "";
                     }
                     
                     if (contentId && contentId !== "null") {
                         window.DB.update("contents", contentId, { title, type, url: finalUrl });
                     } else {
-                        window.DB.add("contents", { courseId: String(courseId), title, type, url: finalUrl });
+                        let newContent = { courseId: String(courseId), title, type, url: finalUrl };
+                        if (type === "taller") {
+                            newContent.passScore = 60;
+                            newContent.questions = [];
+                        }
+                        window.DB.add("contents", newContent);
                     }
                     
                     window.UI.closeModal();
@@ -1602,6 +1614,78 @@
             },
             deleteContent: function(contentId, courseId) {
                 window.DB.delete("contents", contentId);
+                window.UI.closeModal();
+                window.Router.navigate("admin-course-detail", { id: courseId });
+            },
+            openTallerModal: function(courseId, contentId) {
+                const content = window.DB.get("contents").find((c) => String(c.id) === String(contentId));
+                if (!content) return;
+                
+                window.tempTaller = JSON.parse(JSON.stringify(content));
+                if (!window.tempTaller.questions) window.tempTaller.questions = [];
+                if (!window.tempTaller.passScore) window.tempTaller.passScore = 60;
+                
+                const generateHtml = () => {
+                    const questionsHtml = window.tempTaller.questions.map((q, idx) => `
+                        <div class="p-4 mb-4 rounded border bg-bg" style="border-color: var(--border);">
+                            <div class="flex justify-between items-center mb-3">
+                                <strong>Pregunta ${idx + 1}</strong>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="window.tempTaller.questions.splice(${idx}, 1); window.AdminViews.refreshTallerBuilder()" title="Eliminar Pregunta">Eliminar</button>
+                            </div>
+                            <input type="text" class="form-control mb-3" value="${q.q}" onchange="window.tempTaller.questions[${idx}].q = this.value" placeholder="Texto de la pregunta" required>
+                            ${q.options.map((opt, optIdx) => `
+                                <div class="flex items-center gap-3 mb-2 flex-wrap">
+                                    <input type="radio" name="t_correct_${idx}" ${q.correctIdx === optIdx ? "checked" : ""} onchange="window.tempTaller.questions[${idx}].correctIdx = ${optIdx}" required style="transform:scale(1.2);">
+                                    <input type="text" class="form-control flex-1 min-w-[200px]" value="${opt}" onchange="window.tempTaller.questions[${idx}].options[${optIdx}] = this.value" placeholder="Opción ${optIdx + 1}" required>
+                                </div>
+                            `).join("")}
+                        </div>
+                    `).join("");
+                    
+                    return `
+                        <h3 class="mb-4">Configurar Taller: ${content.title}</h3>
+                        <form onsubmit="event.preventDefault(); window.AdminViews.saveTaller('${courseId}', '${contentId}')">
+                            <div class="form-group">
+                                <label>Puntaje mínimo para aprobar (%)</label>
+                                <input type="number" id="taller-score" class="form-control" value="${window.tempTaller.passScore}" min="1" max="100" required>
+                            </div>
+                            <div id="taller-questions-container">${questionsHtml}</div>
+                            <button type="button" class="btn btn-outline w-full mb-4" onclick="window.AdminViews.addTempTallerQuestion()">Agregar Pregunta</button>
+                            <div class="flex justify-between flex-wrap gap-2">
+                                <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                                <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar Taller</button>
+                            </div>
+                        </form>
+                    `;
+                };
+                
+                window.UI.showModal(generateHtml());
+                
+                window.AdminViews.refreshTallerBuilder = function() {
+                    const modal = document.querySelector(".modal-content");
+                    if (modal) modal.innerHTML = generateHtml();
+                };
+                
+                window.AdminViews.addTempTallerQuestion = function() {
+                    window.tempTaller.questions.push({ q: "", options: ["", "", ""], correctIdx: 0 });
+                    window.AdminViews.refreshTallerBuilder();
+                };
+            },
+            saveTaller: function(courseId, contentId) {
+                if (window.tempTaller.questions.length === 0) {
+                    return window.UI.showAlert("Agregue al menos una pregunta.");
+                }
+                
+                const scoreInput = document.getElementById("taller-score");
+                if (scoreInput) {
+                    window.tempTaller.passScore = parseInt(scoreInput.value);
+                }
+                
+                window.DB.update("contents", contentId, {
+                    passScore: window.tempTaller.passScore,
+                    questions: window.tempTaller.questions
+                });
+                
                 window.UI.closeModal();
                 window.Router.navigate("admin-course-detail", { id: courseId });
             },
@@ -2253,7 +2337,7 @@
                             </div>
 
                             <div id="btn-container-area">
-                                ${currentContent && !completedIds.includes(String(currentContent.id)) ? `
+                                ${currentContent && !completedIds.includes(String(currentContent.id)) && currentContent.type !== 'taller' ? `
                                     <div class="action-grid cols-1 m-0 p-0 border-none">
                                         <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${currentContent.id}')">
                                             <span>Marcar módulo como completado</span>
@@ -2314,16 +2398,86 @@
                         `;
                     }
                     return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                } else if (content.type === "pdf") {
+                    return `
+                        <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
+                            <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            <h3 class="mb-2">Documento de Lectura (PDF)</h3>
+                            <p class="text-gray mb-6 max-w-lg mx-auto">Haz clic en el botón inferior para abrir el documento en una nueva pestaña. Podrás visualizarlo a pantalla completa o descargarlo en tu dispositivo.</p>
+                            <a href="${content.url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg w-full sm:w-auto px-8">Abrir / Descargar Documento</a>
+                        </div>
+                    `;
+                } else if (content.type === "taller") {
+                    const studentId = String(window.State.currentUser.id);
+                    const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(content.courseId));
+                    const completedIds = progress?.completedContentIds || [];
+
+                    if (completedIds.includes(String(content.id))) {
+                        return `
+                            <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded border-success" style="min-height: 300px; border-width: 2px;">
+                                <svg class="icon mx-auto mb-4 text-success" style="width: 60px; height: 60px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <h3 class="mb-2 text-success">¡Taller Completado!</h3>
+                                <p class="text-gray max-w-lg mx-auto">Ya has aprobado este taller. Puedes continuar con el siguiente módulo.</p>
+                            </div>
+                        `;
+                    }
+
+                    const qs = content.questions || [];
+                    if(qs.length === 0) return `<div class="p-6 text-center text-gray bg-white rounded border">Este taller aún no tiene preguntas configuradas.</div>`;
+
+                    let tallerHtml = `
+                        <div class="p-6 bg-white rounded border text-left" style="border-color: var(--border);">
+                            <h3 class="mb-2 text-xl font-bold">Taller: ${content.title}</h3>
+                            <p class="text-sm text-gray mb-6 border-b pb-4">Responde las siguientes preguntas. Puntaje para aprobar: <strong>${content.passScore || 60}%</strong></p>
+                            <form id="taller-form-${content.id}" onsubmit="event.preventDefault(); window.StudentViews.submitTaller('${content.courseId}', '${content.id}')">
+                    `;
+                    
+                    qs.forEach((q, idx) => {
+                        tallerHtml += `
+                            <div class="mb-6 p-4 bg-bg rounded">
+                                <h4 class="mb-3 text-text">${idx + 1}. ${q.q}</h4>
+                                ${q.options.map((opt, oIdx) => `
+                                    <div class="mb-2 flex items-center gap-2 cursor-pointer text-gray">
+                                        <input type="radio" name="tq_${idx}" value="${oIdx}" required style="transform: scale(1.2);">
+                                        <span style="word-break:break-word;">${opt}</span>
+                                    </div>
+                                `).join("")}
+                            </div>
+                        `;
+                    });
+
+                    tallerHtml += `
+                                <button type="submit" class="btn btn-primary btn-lg w-full mt-2" id="btn-submit-taller-${content.id}">Enviar Respuestas</button>
+                            </form>
+                        </div>
+                    `;
+                    return tallerHtml;
                 }
+            },
+            submitTaller: function(courseId, contentId) {
+                const content = window.DB.get("contents").find(c => String(c.id) === String(contentId));
+                if (!content || !content.questions) return;
                 
-                return `
-                    <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
-                        <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        <h3 class="mb-2">Documento de Lectura (PDF)</h3>
-                        <p class="text-gray mb-6 max-w-lg mx-auto">Haz clic en el botón inferior para abrir el documento en una nueva pestaña. Podrás visualizarlo a pantalla completa o descargarlo en tu dispositivo.</p>
-                        <a href="${content.url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg w-full sm:w-auto px-8">Abrir / Descargar Documento</a>
-                    </div>
-                `;
+                const formEl = document.getElementById(`taller-form-${contentId}`);
+                let correctCount = 0;
+
+                content.questions.forEach((q, idx) => {
+                    const selectedInput = formEl.elements[`tq_${idx}`];
+                    const val = selectedInput ? selectedInput.value : null;
+                    if (val !== null && parseInt(val) === q.correctIdx) {
+                        correctCount++;
+                    }
+                });
+
+                const passScore = content.passScore || 60;
+                const percentage = content.questions.length > 0 ? Math.round((correctCount / content.questions.length) * 100) : 0;
+
+                if (percentage >= passScore) {
+                    window.UI.showAlert(`<b>¡Excelente!</b><br><br>Aprobaste el taller con un puntaje de <b>${percentage}%</b>.<br>Se marcará como completado.`);
+                    window.StudentViews.markCompleted(courseId, contentId);
+                } else {
+                    window.UI.showAlert(`<b>Inténtalo de nuevo</b><br><br>Obtuviste un <b>${percentage}%</b>, pero necesitas al menos un <b>${passScore}%</b> para aprobar este taller.`);
+                }
             },
             changeContent: function(courseId, contentId, event) {
                 const content = window.DB.get("contents")
@@ -2346,7 +2500,7 @@
                 const btnArea = document.getElementById("btn-container-area");
                 if (btnArea) {
                     const completedIds = progress?.completedContentIds || [];
-                    if (completedIds.includes(String(contentId))) {
+                    if (completedIds.includes(String(contentId)) || content.type === 'taller') {
                         btnArea.innerHTML = "";
                     } else {
                         btnArea.innerHTML = `
