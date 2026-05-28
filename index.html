@@ -295,7 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 1.5</p>
+                    <p class="text-center text-xs text-gray mt-4">Versión 1.6</p>
                 </form>
             </div>
         </div>
@@ -362,6 +362,7 @@
         import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
         window.State = { currentUser: null };
         window.currentRoute = { id: null, params: {} };
@@ -413,6 +414,41 @@
         window.FBStorage = { storage, ref, uploadBytes, getDownloadURL };
         
         const appId = typeof __app_id !== "undefined" ? __app_id : "funetec-lms";
+
+        const SUPABASE_URL = "https://zfluxhmzribpoqrupddz.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmbHV4aG16cmlicG9xcnVwZGR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1ODAyMzcsImV4cCI6MjA5MjE1NjIzN30.KbakhQjz0hHiYAp9XqN7ABC3C6sdISn59JCPqbPiIis";
+        const SUPABASE_BUCKET = "cursos";
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function uploadPdfToSupabase(file, courseId) {
+            if (!file) throw new Error("Debe seleccionar un PDF.");
+            if (file.type !== "application/pdf") throw new Error("El archivo debe ser PDF.");
+
+            const safeFileName = file.name
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9._-]/g, "_");
+
+            const filePath = `cursos/${courseId}/${Date.now()}_${safeFileName}`;
+
+            const { data, error } = await supabase.storage
+                .from(SUPABASE_BUCKET)
+                .upload(filePath, file, {
+                    contentType: "application/pdf",
+                    upsert: false
+                });
+
+            if (error) {
+                console.error("Error Supabase:", error);
+                throw new Error("No se pudo subir el PDF a Supabase: " + error.message);
+            }
+
+            const { data: publicData } = supabase.storage
+                .from(SUPABASE_BUCKET)
+                .getPublicUrl(data.path);
+
+            return publicData.publicUrl;
+        }
 
         function getSafeCollection(collectionName) {
             return collection(db, "artifacts", appId, "public", "data", collectionName);
@@ -1437,23 +1473,9 @@
                             const file = fileInput.files[0];
                             if (file.type !== "application/pdf") throw new Error("El archivo debe ser un PDF válido.");
                             
-                            if (saveBtn) saveBtn.textContent = "Subiendo PDF a Firebase...";
+                            if (saveBtn) saveBtn.textContent = "Subiendo PDF...";
                             
-                            const safeFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                            const fileRef = window.FBStorage.ref(window.FBStorage.storage, `pdfs/${Date.now()}_${safeFileName}`);
-                            
-                            const uploadTask = window.FBStorage.uploadBytes(fileRef, file);
-                            const timeoutTask = new Promise((_, reject) => {
-                                setTimeout(() => reject(new Error("Tiempo de espera agotado en Firebase.")), 15000);
-                            });
-                            
-                            try {
-                                await Promise.race([uploadTask, timeoutTask]);
-                                finalUrl = await window.FBStorage.getDownloadURL(fileRef);
-                            } catch (storageError) {
-                                console.warn("Firebase Storage falló, intentando usar alternativa o lanzando error.", storageError);
-                                throw new Error("Firebase Storage bloqueó la subida. Asegúrate de haber ejecutado el comando gsutil para el CORS. Detalle: " + storageError.message);
-                            }
+                            finalUrl = await uploadPdfToSupabase(file, courseId);
                             
                         } else {
                             finalUrl = existingUrl;
@@ -2084,7 +2106,6 @@
                     return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
                 }
                 
-                // Vista externa para PDF restaurada
                 return `
                     <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
                         <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
