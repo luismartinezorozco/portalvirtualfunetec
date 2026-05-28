@@ -295,7 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 1.2</p>
+                    <p class="text-center text-xs text-gray mt-4">Versión 1.3</p>
                 </form>
             </div>
         </div>
@@ -361,7 +361,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         window.State = { currentUser: null };
         window.currentRoute = { id: null, params: {} };
@@ -409,8 +408,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
-        window.FBStorage = { storage, ref, uploadBytes, getDownloadURL };
         
         const appId = typeof __app_id !== "undefined" ? __app_id : "funetec-lms";
 
@@ -1426,6 +1423,7 @@
                     const title = formEl.elements.title.value;
                     const type = formEl.elements.type.value;
                     let finalUrl = "";
+                    let isPdfUploaded = false;
                     
                     if (type === "video") {
                         finalUrl = formEl.elements.url.value;
@@ -1443,15 +1441,15 @@
                             formData.append("file", file);
                             formData.append("upload_preset", "ml_default_funetec");
                             
-                            // API endpoint configurado a /raw/upload para evitar el error 401
                             const res = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/raw/upload", {
                                 method: "POST",
                                 body: formData
                             });
                             
-                            if (!res.ok) throw new Error("La subida falló en Cloudinary.");
+                            if (!res.ok) throw new Error("La subida falló en Cloudinary. Verifica tu upload preset.");
                             const data = await res.json();
                             finalUrl = data.secure_url;
+                            isPdfUploaded = true;
                             
                         } else {
                             finalUrl = existingUrl;
@@ -1467,9 +1465,16 @@
                     
                     window.UI.closeModal();
                     window.Router.navigate("admin-course-detail", { id: courseId });
+                    
+                    if (isPdfUploaded) {
+                        setTimeout(() => {
+                            window.UI.showAlert("<b>PDF Subido Exitosamente</b><br><br>Si al abrirlo tú o los estudiantes obtienen un <b>Error 401 Unauthorized</b>, debes ingresar a tu cuenta de Cloudinary, ir a <b>Settings > Security</b> y <b>DESMARCAR</b> la opción <i>'Strict delivery of PDF and ZIP files'</i>.");
+                        }, 500);
+                    }
+                    
                 } catch (error) {
                     console.error("Error al guardar contenido:", error);
-                    window.UI.showAlert("<b>Aviso Importante:</b><br><br>" + error.message);
+                    window.UI.showAlert("<b>Error:</b><br><br>" + error.message);
                     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Reintentar"; }
                 }
             },
@@ -1712,7 +1717,6 @@
                     }
                 });
 
-                // Añadir BOM (Byte Order Mark) para forzar UTF-8 y que Excel lea correctamente los acentos y las eñes
                 const blob = new Blob(["\uFEFF" + csvStr], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
@@ -2083,12 +2087,13 @@
                     return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
                 }
                 
+                // Botón externo a Cloudinary restaurado con protección `noopener noreferrer`
                 return `
                     <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
                         <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                         <h3 class="mb-2">Documento de Lectura (PDF)</h3>
                         <p class="text-gray mb-6 max-w-lg mx-auto">Haz clic en el botón inferior para abrir el documento en una nueva pestaña. Podrás visualizarlo a pantalla completa o descargarlo en tu dispositivo.</p>
-                        <a href="${content.url}" target="_blank" class="btn btn-primary btn-lg w-full sm:w-auto px-8">Abrir / Descargar Documento</a>
+                        <a href="${content.url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg w-full sm:w-auto px-8">Abrir / Descargar Documento</a>
                     </div>
                 `;
             },
