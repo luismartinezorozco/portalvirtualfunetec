@@ -242,7 +242,7 @@
             .modal-overlay { align-items: flex-end; padding: 0; }
             .modal-content { padding: 1.5rem; width: 100%; margin: 0; border-radius: 20px 20px 0 0; border: none; animation: slideUpModal 0.3s ease-out forwards; }
             
-            .notification-dropdown { position: fixed; top: 72px; right: 1rem; left: 1rem; width: auto; max-height: calc(100vh - 90px); }
+            .notification-dropdown { fixed; top: 72px; right: 1rem; left: 1rem; width: auto; max-height: calc(100vh - 90px); }
         }
 
         @media (max-width: 480px) {
@@ -295,7 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 1.6</p>
+                    <p class="text-center text-xs text-gray mt-4">Versión 1.7</p>
                 </form>
             </div>
         </div>
@@ -429,7 +429,7 @@
                 .replace(/[\u0300-\u036f]/g, "")
                 .replace(/[^a-zA-Z0-9._-]/g, "_");
 
-            const filePath = `cursos/${courseId}/${Date.now()}_${safeFileName}`;
+            const filePath = `${courseId}/${Date.now()}_${safeFileName}`;
 
             const { data, error } = await supabase.storage
                 .from(SUPABASE_BUCKET)
