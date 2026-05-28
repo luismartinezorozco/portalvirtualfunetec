@@ -295,7 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 1.8</p>
+                    <p class="text-center text-xs text-gray mt-4">Versión 1.9</p>
                 </form>
             </div>
         </div>
@@ -361,6 +361,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
         window.State = { currentUser: null };
@@ -409,6 +410,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const storage = getStorage(app);
+        window.FBStorage = { storage, ref, uploadBytes, getDownloadURL };
         
         const appId = typeof __app_id !== "undefined" ? __app_id : "funetec-lms";
 
@@ -869,6 +872,31 @@
         };
 
         window.AdminViews = {
+            toggleTeacherFilter: function(role) {
+                const filterGroup = document.getElementById('teacher-filter-group');
+                if (filterGroup) {
+                    filterGroup.style.display = (role === 'student' || role === 'Estudiante') ? 'block' : 'none';
+                    if (role !== 'student' && role !== 'Estudiante') {
+                        const filterSelect = document.getElementById('teacher-filter');
+                        if(filterSelect) filterSelect.value = "";
+                        window.AdminViews.filterCoursesByTeacher("");
+                    }
+                }
+            },
+            filterCoursesByTeacher: function(teacherId) {
+                document.querySelectorAll('.course-checkbox-label').forEach(label => {
+                    if (!teacherId) {
+                        label.style.display = 'flex';
+                    } else {
+                        const teachers = label.getAttribute('data-teachers').split(',');
+                        if (teachers.includes(String(teacherId))) {
+                            label.style.display = 'flex';
+                        } else {
+                            label.style.display = 'none';
+                        }
+                    }
+                });
+            },
             openProfileModal: function() {
                 window.UI.showModal(`
                     <h3 class="mb-4">Cambiar Contraseña</h3>
@@ -1017,23 +1045,49 @@
             openEditUserModal: function(userId = null) {
                 const user = userId ? window.DB.get("users").find((u) => String(u.id) === String(userId)) : null;
                 const courses = window.DB.get("courses");
+                const teachers = window.DB.get("users").filter((u) => u.role === "docente");
+                const allEnrollments = window.DB.get("enrollments");
                 
                 const userEnrollments = (userId && userId !== "null")
-                    ? window.DB.get("enrollments")
+                    ? allEnrollments
                         .filter((e) => String(e.studentId) === String(userId))
                         .map((e) => String(e.courseId))
                     : [];
-                    
+                
+                const getCourseTeachers = (courseId) => {
+                    return teachers
+                        .filter(t => allEnrollments.some(e => String(e.courseId) === String(courseId) && String(e.studentId) === String(t.id)))
+                        .map(t => String(t.id));
+                };
+
+                const currentRole = user ? (user.role || "student") : "student";
+                const displayFilter = currentRole === "student" ? "block" : "none";
+
+                let teacherFilterHtml = "";
+                if (teachers.length > 0) {
+                    teacherFilterHtml = `
+                        <div class="form-group" id="teacher-filter-group" style="display: ${displayFilter};">
+                            <label>Filtrar cursos por Docente</label>
+                            <select id="teacher-filter" class="form-control" onchange="window.AdminViews.filterCoursesByTeacher(this.value)">
+                                <option value="">Todos los cursos</option>
+                                ${teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join("")}
+                            </select>
+                        </div>
+                    `;
+                }
+
                 let coursesHtml = "";
                 if (courses.length > 0) {
                     coursesHtml = `
+                        ${teacherFilterHtml}
                         <div class="form-group">
                             <label>Cursos Asignados (Como Alumno/Dueño)</label>
                             <div class="p-2 border rounded" style="max-height: 140px; overflow-y: auto; border-color: var(--border);">
                                 ${courses.map((c) => {
                                     const safeName = c.name || "Curso no especificado";
+                                    const cTeachers = getCourseTeachers(c.id).join(",");
                                     return `
-                                    <label class="flex items-center gap-2 mb-1 cursor-pointer text-sm font-normal text-text">
+                                    <label class="flex items-center gap-2 mb-1 cursor-pointer text-sm font-normal text-text course-checkbox-label" data-teachers="${cTeachers}">
                                         <input type="checkbox" name="assign_courses" value="${c.id}" ${userEnrollments.includes(String(c.id)) ? "checked" : ""}> ${safeName}
                                     </label>
                                     `;
@@ -1066,7 +1120,7 @@
                         ${user ? `
                             <div class="form-group">
                                 <label>Rol en Plataforma</label>
-                                <select name="role" class="form-control">
+                                <select name="role" class="form-control" onchange="window.AdminViews.toggleTeacherFilter(this.value)">
                                     <option value="student" ${user.role !== "admin" && user.role !== "docente" ? "selected" : ""}>Estudiante</option>
                                     <option value="docente" ${user.role === "docente" ? "selected" : ""}>Docente</option>
                                     <option value="admin" ${user.role === "admin" ? "selected" : ""}>Administrador</option>
@@ -1082,7 +1136,7 @@
                         ` : `
                             <div class="form-group">
                                 <label>Rol en Plataforma</label>
-                                <select name="role" class="form-control">
+                                <select name="role" class="form-control" onchange="window.AdminViews.toggleTeacherFilter(this.value)">
                                     <option value="student">Estudiante</option>
                                     <option value="docente">Docente</option>
                                     <option value="admin">Administrador</option>
@@ -1509,7 +1563,7 @@
                             const file = fileInput.files[0];
                             if (file.type !== "application/pdf") throw new Error("El archivo debe ser un PDF válido.");
                             
-                            if (saveBtn) saveBtn.textContent = "Subiendo PDF a Supabase...";
+                            if (saveBtn) saveBtn.textContent = "Subiendo PDF...";
                             
                             finalUrl = await uploadPdfToSupabase(file, courseId);
                             
@@ -2464,199 +2518,151 @@
                 window.UI.showModal(modalHtml);
             },
             renderCerts: function(container) {
-                const studentId = String(window.State.currentUser.id);
-                const certs = window.DB.get("certificates").filter((c) => String(c.studentId) === studentId);
+                let certs = window.DB.get("certificates");
+                
+                // Si es docente, solo ve certificados de sus alumnos
+                if (window.State.currentUser.role === "docente") {
+                    const myCourseIds = window.DB.get("enrollments")
+                        .filter(e => String(e.studentId) === String(window.State.currentUser.id))
+                        .map(e => String(e.courseId));
+                    certs = certs.filter(c => myCourseIds.includes(String(c.courseId)));
+                }
+                
+                const users = window.DB.get("users");
                 const courses = window.DB.get("courses");
                 
                 let html = `
                     <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
-                        <h3 class="m-0">Mis Certificados</h3>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="m-0">Certificados de Alumnos</h3>
+                            <button class="btn btn-outline btn-sm ${window.State.currentUser.role === 'docente' ? 'hidden' : ''}" onclick="window.AdminViews.openCertConfigModal()">Diseño PDF</button>
+                            <button class="btn btn-success btn-sm" onclick="window.AdminViews.exportCertsData()">Exportar CSV</button>
+                        </div>
+                        <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar por estudiante o curso..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
                     </div>
-                    <div class="course-grid">
+                    <div class="card table-responsive">
+                        <table id="admin-certs-table">
+                            <thead><tr><th>Estudiante</th><th>Curso</th><th>Puntaje</th><th>Estado</th><th>Acciones</th></tr></thead>
+                            <tbody>
                 `;
                 
                 if (certs.length === 0) {
-                    html += '<p class="text-gray">No tienes certificados aún. Completa un curso y aprueba el examen.</p>';
+                    html += '<tr><td colspan="5" class="text-center text-gray">No hay registros</td></tr>';
                 }
                 
                 certs.forEach((cert) => {
+                    const student = users.find((u) => String(u.id) === String(cert.studentId));
                     const course = courses.find((c) => String(c.id) === String(cert.courseId));
-                    if (course) {
-                        const topColor = cert.status === "approved" ? "var(--success)" : cert.status === "rejected" ? "var(--danger)" : "var(--warning)";
-                        const cName = course.name || "Curso no especificado";
-
+                    
+                    if (student && course) {
+                        const badgeClass = cert.status === "pending" ? "badge-warning" : cert.status === "approved" ? "badge-success" : "badge-danger";
+                        const statusText = cert.status === "pending" ? "Pendiente" : cert.status === "approved" ? "Aprobado" : "Rechazado";
+                        
                         html += `
-                            <div class="card text-center flex-col justify-between" style="border-top: 4px solid ${topColor};">
-                                <div>
-                                    <h4 class="mb-2 text-text">${cName}</h4>
-                                    <p class="text-sm text-gray mb-2">Puntaje obtenido: ${cert.score}%</p>
-                                </div>
-                        `;
-                        
-                        if (cert.status === "pending") {
-                            html += `
-                                <div>
-                                    <span class="badge badge-warning mb-4 inline-block">En Revisión</span>
-                                    <p class="text-xs text-gray">Esperando aprobación del administrador.</p>
-                                </div>
-                            `;
-                        } else if (cert.status === "rejected") {
-                            html += `
-                                <div>
-                                    <span class="badge badge-danger mb-4 inline-block">Rechazado</span>
-                                    <p class="text-xs text-gray">Comunícate con soporte.</p>
-                                </div>
-                            `;
-                        } else {
-                            html += `
-                                <div>
-                                    <span class="badge badge-success mb-4 inline-block">Aprobado</span>
-                                    <div class="action-grid cols-1 m-0 p-0 border-none">
-                                        <button class="btn-card primary" onclick="window.StudentViews.viewDiploma('${cName.replace(/'/g, "\\\\'")}', '${window.State.currentUser.name.replace(/'/g, "\\\\'")}', '${cert.id}')">
-                                            <span>Ver Diploma</span>
-                                        </button>
+                            <tr>
+                                <td>${student.name}</td>
+                                <td>${course.name}</td>
+                                <td><span class="font-bold">${cert.score}%</span></td>
+                                <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                                <td>
+                                    <div class="flex gap-2 flex-wrap">
+                                        <button class="btn btn-sm btn-outline" title="Ver Detalles Examen" onclick="window.AdminViews.viewExamDetails('${student.id}', '${course.id}')">Detalles</button>
+                                        ${cert.status === "pending" ? `
+                                            <button class="btn btn-sm btn-success" title="Aprobar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'approved')">Aprobar</button>
+                                            <button class="btn btn-sm btn-danger" title="Rechazar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'rejected')">Rechazar</button>
+                                        ` : cert.status === "approved" ? `
+                                            <button class="btn btn-sm btn-primary" title="Editar Certificado" onclick="window.AdminViews.openEditCertModal('${cert.id}', '${student.name.replace(/'/g, "\\\\'")}', '${course.name.replace(/'/g, "\\\\'")}')">Editar</button>
+                                            <button class="btn btn-sm btn-secondary" title="Descargar" onclick="window.StudentViews.viewDiploma('${course.name.replace(/'/g, "\\\\'")}', '${student.name.replace(/'/g, "\\\\'")}', '${cert.id}')">Descargar</button>
+                                        ` : ""}
                                     </div>
-                                </div>
-                            `;
-                        }
-                        
-                        html += `</div>`;
+                                </td>
+                            </tr>
+                        `;
                     }
                 });
                 
-                html += `</div>`;
+                html += `</tbody></table></div>`;
                 container.innerHTML = html;
             },
-            viewDiploma: function(courseName, studentName, certId) {
-                window.UI.showAlert("Generando certificado en PDF, por favor espera...");
-                window.StudentViews.generateCertificatePDF({ courseName, studentName, certId });
+            viewExamDetails: function(studentId, courseId) {
+                const results = window.DB.get("exam_results")
+                    .filter((r) => String(r.studentId) === String(studentId) && String(r.courseId) === String(courseId))
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                if (results.length === 0) {
+                    return window.UI.showAlert("No hay detalles del examen registrados (versión antigua).");
+                }
+                
+                const recentResult = results[0];
+                const detailsHtml = recentResult.details.map((d, idx) => `
+                    <div class="mb-4 p-4 rounded border ${d.esCorrecta ? "bg-bg border-success" : "border-danger"}" style="background: ${d.esCorrecta ? "var(--bg)" : "#fef2f2"}; border-left-width: 4px;">
+                        <p class="font-semibold mb-2 text-text">${idx + 1}. ${d.pregunta}</p>
+                        <p class="text-sm text-gray">Respuesta Usuario: <span class="font-semibold ${d.esCorrecta ? "text-success" : "text-danger"}">${d.respuestaUsuario}</span></p>
+                        ${d.esCorrecta ? "" : `<p class="text-sm text-gray">Respuesta Correcta: <span class="font-semibold text-success">${d.respuestaCorrecta}</span></p>`}
+                    </div>
+                `).join("");
+                
+                window.UI.showModal(`
+                    <h3 class="mb-4">Detalle del Examen</h3>
+                    <p class="mb-2"><strong>Puntaje Obtenido:</strong> <span class="font-bold text-primary">${recentResult.score}%</span></p>
+                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentación:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
+                    <div style="max-height: 400px; overflow-y: auto; padding-right:10px;">
+                        ${detailsHtml}
+                    </div>
+                    <div class="text-center mt-6">
+                        <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cerrar</button>
+                    </div>
+                `);
             },
-            generateCertificatePDF: function(data) {
-                const { courseName, studentName, certId } = data;
-                const cert = window.DB.get("certificates").find(c => String(c.id) === String(certId)) || {};
-                const user = window.DB.get("users").find(u => String(u.id) === String(cert.studentId)) || {};
-                const courseObj = window.DB.get("courses").find(c => String(c.id) === String(cert.courseId)) || {};
-                const docId = user.document || "No registrado";
-                const cHours = courseObj.hours || 48;
+            openEditCertModal: function(certId, defaultName, defaultCourse) {
+                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
+                if (!cert) return;
                 
-                const d = cert.overrideDate ? new Date(cert.overrideDate + "T00:00:00") : new Date();
-                const dStr = `Dado en Barranquilla, a los ${d.getDate()} de ${["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][d.getMonth()]} de ${d.getFullYear()}`;
+                const nameToShow = cert.overrideName || defaultName;
+                const courseToShow = cert.overrideCourse || defaultCourse;
+                const dateToShow = cert.overrideDate || new Date().toISOString().split("T")[0];
                 
-                const fName = (cert.overrideName || studentName).toUpperCase();
-                const fCourse = (cert.overrideCourse || courseName).toUpperCase();
-
-                const loadJsPdf = () => window.jspdf ? Promise.resolve() : new Promise((res, rej) => {
-                    const s = document.createElement("script");
-                    s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-                    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+                window.UI.showModal(`
+                    <h3 class="mb-4">Editar Datos Impresos del Certificado</h3>
+                    <form onsubmit="event.preventDefault(); window.AdminViews.saveCertEdits('${certId}', this)">
+                        <div class="form-group">
+                            <label>Nombre a mostrar</label>
+                            <input type="text" name="name" class="form-control" value="${nameToShow}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Curso a mostrar</label>
+                            <input type="text" name="course" class="form-control" value="${courseToShow}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Emisión</label>
+                            <input type="date" name="date" class="form-control" value="${dateToShow}" required>
+                        </div>
+                        <div class="flex justify-between mt-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar</button>
+                        </div>
+                    </form>
+                `);
+            },
+            saveCertEdits: function(certId, formEl) {
+                window.DB.update("certificates", certId, {
+                    overrideName: formEl.elements.name.value,
+                    overrideCourse: formEl.elements.course.value,
+                    overrideDate: formEl.elements.date.value
                 });
-
-                const getB64 = (url) => new Promise(res => {
-                    if(!url) return res(null);
-                    const img = new Image(); img.crossOrigin = "Anonymous";
-                    img.onload = () => {
-                        const cvs = document.createElement("canvas"); cvs.width = img.width; cvs.height = img.height;
-                        cvs.getContext("2d").drawImage(img, 0, 0); res(cvs.toDataURL("image/png"));
-                    };
-                    img.onerror = () => res(null); img.src = url;
-                });
-
-                const cfg = window.DB.get("cert_config")[0] || {};
-                const defs = {
-                    h1: "Institución de Educación", h2: "para el Trabajo y Desarrollo Humano",
-                    sh1: "Aprobado por la Secretaria de Educación Distrital de Barranquilla mediante Resolución N° 06077 del 19 de octubre de 2023.",
-                    sh2: "Educación para el Trabajo y Desarrollo Humano.", constar: "Hace constar que :",
-                    aprobo: "Aprobó el curso de:", duracion: "Con una duración de ( {horas} horas).",
-                    vigencia: "( vigencia 2 años )", f1n: "KELLY PATRICIA REYES UTRIA", f1r: "Directora",
-                    f2n: "NEDIS FERNANDEZ BARRANCO", f2r: "Coordinadora Académica",
-                    ft1: "funetec2022@gmail.com", ft2: "calle 47#18_24 Barranquilla", ft3: "3046781679"
-                };
-                const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
-
-                Promise.all([
-                    loadJsPdf(), 
-                    getB64(val('f1img')), 
-                    getB64(val('f2img')),
-                    getB64('https://image2url.com/r2/default/images/1775071648590-9b1104bf-6774-470c-bcb6-9672d743f144.png'), // email icon
-                    getB64('https://image2url.com/r2/default/images/1775071789052-124cd7a8-b4d7-4cc4-be4b-292c9219cfa1.avif'), // map icon
-                    getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg'),  // phone icon
-                    getB64('https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg')   // Logo principal
-                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon, mainLogo]) => {
-                    const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
-                    const cX = 148.5; 
+                window.UI.closeModal();
+                window.Router.navigate("admin-certs");
+            },
+            updateCertStatus: function(certId, status) {
+                window.DB.update("certificates", certId, { status: status });
+                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
+                
+                const msg = status === "approved" 
+                    ? "¡Tu certificado ha sido aprobado y está listo para descargar!" 
+                    : "Tu solicitud de certificado fue rechazada.";
                     
-                    const T = (txt, y, sz, fnt="helvetica", st="normal", clr=0, x=cX, al="center") => {
-                        pdf.setTextColor(clr); pdf.setFont(fnt, st); pdf.setFontSize(sz);
-                        pdf.text(txt, x, y, { align: al });
-                    };
-
-                    // Logo
-                    if (mainLogo) {
-                        pdf.addImage(mainLogo, "PNG", cX - 17.5, 8, 35, 35);
-                    } else {
-                        pdf.setFillColor(153, 27, 27); pdf.rect(cX-10, 15, 5, 18, 'F');
-                        pdf.setFillColor(225, 29, 42); pdf.rect(cX-3, 10, 5, 23, 'F');
-                        pdf.setFillColor(252, 165, 165); pdf.rect(cX+4, 15, 5, 18, 'F');
-                        T("FUNETEC", 38, 12, "helvetica", "bold");
-                    }
-
-                    // Textos principales
-                    T(val('h1'), 55, 26, "times", "bold");
-                    T(val('h2'), 65, 26, "times", "bold");
-                    T(val('sh1'), 75, 10, "helvetica", "normal", 50);
-                    T(val('sh2'), 80, 10, "helvetica", "normal", 50);
-                    T(val('constar'), 95, 14);
-                    T(fName, 115, 32, "times", "bold");
-                    T(`Identificado con cédula de ciudadanía N.º ${docId}`, 125, 11);
-                    T(val('aprobo'), 140, 14);
-                    T(fCourse, 155, 28, "times", "bold");
-                    
-                    let durText = val('duracion') || "";
-                    if (durText.includes('{horas}')) durText = durText.replace('{horas}', cHours);
-                    else durText = durText.replace('48', cHours);
-
-                    T(durText, 170, 11, "helvetica", "normal", 50);
-                    T(dStr, 176, 11, "helvetica", "normal", 50);
-                    T(val('vigencia'), 182, 11, "helvetica", "normal", 50);
-
-                    // Firmas (Con imágenes)
-                    pdf.setDrawColor(0); pdf.setLineWidth(0.5);
-                    
-                    // Firma 1
-                    pdf.line(40, 180, 110, 180);
-                    if(s1b64) pdf.addImage(s1b64, "PNG", 50, 155, 50, 24);
-                    T(val('f1n'), 185, 9, "helvetica", "bold", 0, 75);
-                    T(val('f1r'), 190, 9, "helvetica", "normal", 0, 75);
-
-                    // Firma 2
-                    pdf.line(187, 180, 257, 180);
-                    if(s2b64) pdf.addImage(s2b64, "PNG", 197, 155, 50, 24);
-                    T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
-                    T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
-
-                    // Footer con los iconos correctos cargados externamente
-                    const footerData = [
-                        { x: 45, text: val('ft1'), icon: emailIcon },
-                        { x: 120, text: val('ft2'), icon: mapIcon },
-                        { x: 215, text: val('ft3'), icon: phoneIcon }
-                    ];
-
-                    footerData.forEach(f => {
-                        if (f.icon) {
-                            // Se ubica el icono de forma centrada donde iba el circulo rojo original (f.x, 198)
-                            pdf.addImage(f.icon, "PNG", f.x - 3, 195, 6, 6);
-                        } else {
-                            // Fallback de seguridad en caso de que la imagen no cargue
-                            pdf.setFillColor(225, 29, 42); 
-                            pdf.circle(f.x, 198, 2.5, 'F');
-                        }
-                        T(f.text, 199.5, 9, "helvetica", "bold", 50, f.x + 5, "left");
-                    });
-
-                    pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
-                    window.UI.closeModal();
-
-                }).catch(() => window.UI.showAlert("Error al generar PDF. Revise su conexión."));
+                window.notifyUser(cert.studentId, msg);
+                window.Router.navigate("admin-certs");
             }
         };
 
