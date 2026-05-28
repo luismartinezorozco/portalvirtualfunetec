@@ -398,7 +398,10 @@
         try {
             if (typeof __firebase_config !== "undefined" && __firebase_config) {
                 const configStr = JSON.parse(__firebase_config);
-                if (Object.keys(configStr).length > 0) firebaseConfig = configStr;
+                // Si la plataforma de previsualización inyecta credenciales, forzamos mantener TU bucket de storage
+                if (Object.keys(configStr).length > 0) {
+                    firebaseConfig = { ...configStr, storageBucket: "funetec-equalsby-oficial.firebasestorage.app" };
+                }
             }
         } catch (error) { console.warn("Usando configuración de Firebase local por defecto."); }
 
@@ -1418,12 +1421,36 @@
                             const file = fileInput.files[0];
                             if (file.type !== "application/pdf") throw new Error("El archivo debe ser un PDF válido.");
                             
-                            if (saveBtn) saveBtn.textContent = "Subiendo PDF a Firebase...";
+                            if (saveBtn) saveBtn.textContent = "Subiendo PDF... (Por favor espera)";
                             
                             const safeFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                             const fileRef = window.FBStorage.ref(window.FBStorage.storage, `pdfs/${Date.now()}_${safeFileName}`);
-                            await window.FBStorage.uploadBytes(fileRef, file);
-                            finalUrl = await window.FBStorage.getDownloadURL(fileRef);
+                            
+                            const uploadTask = window.FBStorage.uploadBytes(fileRef, file);
+                            const timeoutTask = new Promise((_, reject) => {
+                                setTimeout(() => reject(new Error("Tiempo de espera agotado en Firebase.")), 10000);
+                            });
+                            
+                            try {
+                                await Promise.race([uploadTask, timeoutTask]);
+                                finalUrl = await window.FBStorage.getDownloadURL(fileRef);
+                            } catch (storageError) {
+                                console.warn("Firebase Storage falló (CORS/Reglas), usando Cloudinary de respaldo:", storageError);
+                                if (saveBtn) saveBtn.textContent = "Subiendo por servidor de respaldo...";
+                                
+                                const formData = new FormData();
+                                formData.append("file", file);
+                                formData.append("upload_preset", "ml_default_funetec");
+                                
+                                const res = await fetch("https://api.cloudinary.com/v1_1/dkufuo5wc/auto/upload", {
+                                    method: "POST",
+                                    body: formData
+                                });
+                                
+                                if (!res.ok) throw new Error("La subida falló tanto en Firebase como en el servidor de respaldo.");
+                                const data = await res.json();
+                                finalUrl = data.secure_url;
+                            }
                             
                         } else {
                             finalUrl = existingUrl;
@@ -1441,8 +1468,8 @@
                     window.Router.navigate("admin-course-detail", { id: courseId });
                 } catch (error) {
                     console.error("Error al guardar contenido:", error);
-                    window.UI.showAlert("Error: " + error.message);
-                    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Guardar"; }
+                    window.UI.showAlert("<b>Aviso Importante:</b><br><br>" + error.message);
+                    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Reintentar"; }
                 }
             },
             confirmDeleteContent: function(contentId, courseId) {
@@ -1684,7 +1711,6 @@
                     }
                 });
 
-                // Añadir BOM (Byte Order Mark) para forzar UTF-8 y que Excel lea correctamente los acentos y las eñes
                 const blob = new Blob(["\uFEFF" + csvStr], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
@@ -2055,6 +2081,7 @@
                     return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
                 }
                 
+                // Vista externa para PDF restaurada
                 return `
                     <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
                         <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
