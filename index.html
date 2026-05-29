@@ -286,7 +286,7 @@
                 <form id="login-form" class="hidden">
                     <div class="form-group">
                         <label for="login-document">Número de Cédula o Correo</label>
-                        <input id="login-document" class="form-control" required placeholder="Ej: admin@funetec.com">
+                        <input id="login-document" class="form-control" required placeholder="usuario">
                     </div>
                     <div class="form-group">
                         <label for="login-password">Contraseña</label>
@@ -295,7 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 2.0</p>
+                    <p class="text-center text-xs text-gray mt-4">Versión 2.4</p>
                 </form>
             </div>
         </div>
@@ -361,7 +361,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
         window.State = { currentUser: null };
@@ -410,8 +409,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
-        window.FBStorage = { storage, ref, uploadBytes, getDownloadURL };
         
         const appId = typeof __app_id !== "undefined" ? __app_id : "funetec-lms";
 
@@ -928,12 +925,77 @@
                 window.UI.showAlert("Contraseña actualizada exitosamente.");
             },
             renderDashboard: function(container) {
-                const students = window.DB.get("users").filter((u) => u.document !== "admin@funetec.com");
+                const students = window.DB.get("users").filter((u) => u.document !== "admin@funetec.com" && u.role !== "docente");
                 const courses = window.DB.get("courses");
                 const pendingCerts = window.DB.get("certificates").filter((c) => c.status === "pending");
                 const pendingExams = window.DB.get("progress").filter((p) => p.estadoExamen === "solicitado");
                 
+                const teachers = window.DB.get("users").filter((u) => u.role === "docente");
+                const allEnrollments = window.DB.get("enrollments");
+                
+                let teacherStatsHtml = "";
+                if (teachers.length > 0) {
+                    teacherStatsHtml = `
+                        <h3 class="mb-4 text-text mt-8 border-t pt-6" style="border-color: var(--border);">Estadísticas por Docente</h3>
+                        <div class="card table-responsive mb-6">
+                            <table>
+                                <thead>
+                                    <tr><th>Docente</th><th>Cursos Impartidos</th><th>Estudiantes Asignados</th></tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    teachers.forEach(teacher => {
+                        const teacherCourseIds = allEnrollments
+                            .filter(e => String(e.studentId) === String(teacher.id))
+                            .map(e => String(e.courseId));
+                        
+                        const uniqueStudents = new Set();
+                        allEnrollments.forEach(e => {
+                            if (teacherCourseIds.includes(String(e.courseId))) {
+                                const u = window.DB.get("users").find(user => String(user.id) === String(e.studentId));
+                                if (u && u.role !== "docente" && u.role !== "admin") {
+                                    uniqueStudents.add(u.id);
+                                }
+                            }
+                        });
+
+                        teacherStatsHtml += `
+                            <tr>
+                                <td><strong>${teacher.name}</strong></td>
+                                <td><span class="badge badge-primary">${teacherCourseIds.length}</span></td>
+                                <td><span class="badge badge-success">${uniqueStudents.size}</span></td>
+                            </tr>
+                        `;
+                    });
+                    teacherStatsHtml += `</tbody></table></div>`;
+                }
+
+                const today = new Date();
+                let cutoffMonth = today.getMonth();
+                let cutoffYear = today.getFullYear();
+                if (today.getDate() > 5) {
+                    cutoffMonth++;
+                    if (cutoffMonth > 11) {
+                        cutoffMonth = 0;
+                        cutoffYear++;
+                    }
+                }
+                const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                const cutoffDateStr = `5 de ${months[cutoffMonth]} de ${cutoffYear}`;
+
                 let html = `
+                    <div class="mb-4">
+                        <div class="p-4 bg-primary text-white rounded-lg shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
+                            <div class="flex items-center gap-3">
+                                <svg class="icon" style="width:2.5rem;height:2.5rem; color: white;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                <div>
+                                    <h3 class="m-0 text-white font-bold text-xl">Próxima Fecha de Corte</h3>
+                                    <p class="m-0 opacity-90 text-white">${cutoffDateStr}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="course-grid mb-6">
                         <div class="card text-center">
                             <h3 class="text-gray">Usuarios en el Sistema</h3>
@@ -948,6 +1010,8 @@
                             <div class="text-warning font-bold" style="font-size: 3rem;">${pendingCerts.length}</div>
                         </div>
                     </div>
+                    
+                    ${teacherStatsHtml}
                 `;
                 
                 if (pendingExams.length > 0) {
@@ -1437,7 +1501,7 @@
                 if (!course) return;
 
                 const contents = window.DB.get("contents").filter((c) => String(c.courseId) === String(courseId));
-                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId) && !e.contentId);
                 
                 const cName = course.name || "Curso no especificado";
 
@@ -1462,9 +1526,9 @@
                 contents.forEach((content, idx) => {
                     html += `
                         <div class="content-item mobile-stack">
-                            <span class="mb-2 w-full"><strong>${idx + 1}.</strong> ${content.title} <span class="badge badge-secondary ml-2">${content.type}</span></span>
+                            <span class="mb-2 w-full"><strong>${idx + 1}.</strong> ${content.title} <span class="badge badge-secondary ml-2">${content.type === 'taller' ? 'Taller' : content.type}</span></span>
                             <div class="flex gap-2 w-full sm:w-auto">
-                                ${content.type === 'taller' ? `<button class="btn btn-outline btn-sm flex-1" onclick="window.AdminViews.openTallerModal('${courseId}', '${content.id}')">Preguntas</button>` : ''}
+                                ${content.type === 'taller' ? `<button class="btn btn-success btn-sm flex-1" onclick="window.AdminViews.openExamModal('${courseId}', true, '${content.id}')">Preguntas</button>` : ''}
                                 <button class="btn btn-outline btn-sm flex-1" onclick="window.AdminViews.openContentModal('${courseId}', '${content.id}')">Editar</button>
                                 <button class="btn btn-danger btn-sm flex-1" onclick="window.AdminViews.confirmDeleteContent('${content.id}', '${courseId}')">Eliminar</button>
                             </div>
@@ -1502,18 +1566,21 @@
                     const type = selectEl.value;
                     const urlGroup = document.getElementById("url-input-group");
                     const fileGroup = document.getElementById("file-input-group");
-                    
-                    urlGroup.style.display = "none";
-                    fileGroup.style.display = "none";
-                    document.getElementById("content-url").required = false;
-                    document.getElementById("content-file").required = false;
-                    
                     if(type === "video") {
                         urlGroup.style.display = "block";
+                        fileGroup.style.display = "none";
                         document.getElementById("content-url").required = true;
+                        document.getElementById("content-file").required = false;
                     } else if(type === "pdf") {
+                        urlGroup.style.display = "none";
                         fileGroup.style.display = "block";
+                        document.getElementById("content-url").required = false;
                         document.getElementById("content-file").required = !document.getElementById("existing-content-url").value;
+                    } else {
+                        urlGroup.style.display = "none";
+                        fileGroup.style.display = "none";
+                        document.getElementById("content-url").required = false;
+                        document.getElementById("content-file").required = false;
                     }
                 };
 
@@ -1529,7 +1596,7 @@
                             <select name="type" class="form-control" required onchange="window.AdminViews.toggleContentInputs(this)">
                                 <option value="video" ${!isPdf && !isTaller ? "selected" : ""}>Video</option>
                                 <option value="pdf" ${isPdf ? "selected" : ""}>PDF</option>
-                                <option value="taller" ${isTaller ? "selected" : ""}>Taller (Cuestionario)</option>
+                                <option value="taller" ${isTaller ? "selected" : ""}>Taller / Cuestionario</option>
                             </select>
                         </div>
                         <div class="form-group" id="url-input-group" style="${!isPdf && !isTaller ? 'display:block;' : 'display:none;'}">
@@ -1538,7 +1605,7 @@
                         </div>
                         <div class="form-group" id="file-input-group" style="${isPdf ? 'display:block;' : 'display:none;'}">
                             <label>Subir Archivo PDF</label>
-                            <input type="file" name="file" id="content-file" class="form-control" accept="application/pdf" ${isPdf && existingUrl ? "" : (isPdf ? "required" : "")}>
+                            <input type="file" name="file" id="content-file" class="form-control" accept="application/pdf" ${isPdf && existingUrl ? "" : (!isPdf && !isTaller ? "" : "required")}>
                             <input type="hidden" name="existingUrl" id="existing-content-url" value="${existingUrl}">
                             ${isPdf && existingUrl ? '<div class="mt-2 text-sm text-gray">Archivo actual cargado. Sube uno nuevo para reemplazarlo.</div>' : ''}
                         </div>
@@ -1569,7 +1636,6 @@
                             if (file.type !== "application/pdf") throw new Error("El archivo debe ser un PDF válido.");
                             
                             if (saveBtn) saveBtn.textContent = "Subiendo PDF a Supabase...";
-                            
                             finalUrl = await uploadPdfToSupabase(file, courseId);
                             
                         } else {
@@ -1577,18 +1643,13 @@
                             if (!finalUrl) throw new Error("Debe subir un archivo PDF.");
                         }
                     } else if (type === "taller") {
-                        finalUrl = "";
+                        finalUrl = ""; 
                     }
                     
                     if (contentId && contentId !== "null") {
                         window.DB.update("contents", contentId, { title, type, url: finalUrl });
                     } else {
-                        let newContent = { courseId: String(courseId), title, type, url: finalUrl };
-                        if (type === "taller") {
-                            newContent.passScore = 60;
-                            newContent.questions = [];
-                        }
-                        window.DB.add("contents", newContent);
+                        window.DB.add("contents", { courseId: String(courseId), title, type, url: finalUrl });
                     }
                     
                     window.UI.closeModal();
@@ -1614,88 +1675,26 @@
             },
             deleteContent: function(contentId, courseId) {
                 window.DB.delete("contents", contentId);
-                window.UI.closeModal();
-                window.Router.navigate("admin-course-detail", { id: courseId });
-            },
-            openTallerModal: function(courseId, contentId) {
-                const content = window.DB.get("contents").find((c) => String(c.id) === String(contentId));
-                if (!content) return;
-                
-                window.tempTaller = JSON.parse(JSON.stringify(content));
-                if (!window.tempTaller.questions) window.tempTaller.questions = [];
-                if (!window.tempTaller.passScore) window.tempTaller.passScore = 60;
-                
-                const generateHtml = () => {
-                    const questionsHtml = window.tempTaller.questions.map((q, idx) => `
-                        <div class="p-4 mb-4 rounded border bg-bg" style="border-color: var(--border);">
-                            <div class="flex justify-between items-center mb-3">
-                                <strong>Pregunta ${idx + 1}</strong>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="window.tempTaller.questions.splice(${idx}, 1); window.AdminViews.refreshTallerBuilder()" title="Eliminar Pregunta">Eliminar</button>
-                            </div>
-                            <input type="text" class="form-control mb-3" value="${q.q}" onchange="window.tempTaller.questions[${idx}].q = this.value" placeholder="Texto de la pregunta" required>
-                            ${q.options.map((opt, optIdx) => `
-                                <div class="flex items-center gap-3 mb-2 flex-wrap">
-                                    <input type="radio" name="t_correct_${idx}" ${q.correctIdx === optIdx ? "checked" : ""} onchange="window.tempTaller.questions[${idx}].correctIdx = ${optIdx}" required style="transform:scale(1.2);">
-                                    <input type="text" class="form-control flex-1 min-w-[200px]" value="${opt}" onchange="window.tempTaller.questions[${idx}].options[${optIdx}] = this.value" placeholder="Opción ${optIdx + 1}" required>
-                                </div>
-                            `).join("")}
-                        </div>
-                    `).join("");
-                    
-                    return `
-                        <h3 class="mb-4">Configurar Taller: ${content.title}</h3>
-                        <form onsubmit="event.preventDefault(); window.AdminViews.saveTaller('${courseId}', '${contentId}')">
-                            <div class="form-group">
-                                <label>Puntaje mínimo para aprobar (%)</label>
-                                <input type="number" id="taller-score" class="form-control" value="${window.tempTaller.passScore}" min="1" max="100" required>
-                            </div>
-                            <div id="taller-questions-container">${questionsHtml}</div>
-                            <button type="button" class="btn btn-outline w-full mb-4" onclick="window.AdminViews.addTempTallerQuestion()">Agregar Pregunta</button>
-                            <div class="flex justify-between flex-wrap gap-2">
-                                <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
-                                <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar Taller</button>
-                            </div>
-                        </form>
-                    `;
-                };
-                
-                window.UI.showModal(generateHtml());
-                
-                window.AdminViews.refreshTallerBuilder = function() {
-                    const modal = document.querySelector(".modal-content");
-                    if (modal) modal.innerHTML = generateHtml();
-                };
-                
-                window.AdminViews.addTempTallerQuestion = function() {
-                    window.tempTaller.questions.push({ q: "", options: ["", "", ""], correctIdx: 0 });
-                    window.AdminViews.refreshTallerBuilder();
-                };
-            },
-            saveTaller: function(courseId, contentId) {
-                if (window.tempTaller.questions.length === 0) {
-                    return window.UI.showAlert("Agregue al menos una pregunta.");
-                }
-                
-                const scoreInput = document.getElementById("taller-score");
-                if (scoreInput) {
-                    window.tempTaller.passScore = parseInt(scoreInput.value);
-                }
-                
-                window.DB.update("contents", contentId, {
-                    passScore: window.tempTaller.passScore,
-                    questions: window.tempTaller.questions
-                });
+                // Si era un taller, borrar sus examenes vinculados
+                window.DB.get("exams").filter(e => String(e.contentId) === String(contentId)).forEach(e => window.DB.delete("exams", e.id));
                 
                 window.UI.closeModal();
                 window.Router.navigate("admin-course-detail", { id: courseId });
             },
-            openExamModal: function(courseId, isEdit) {
-                const exam = isEdit 
-                    ? window.DB.get("exams").find((e) => String(e.courseId) === String(courseId)) 
-                    : { courseId: String(courseId), passScore: 60, questions: [] };
-                    
-                window.tempExam = JSON.parse(JSON.stringify(exam));
+            openExamModal: function(courseId, isEdit, contentId = null) {
+                let exam;
+                if (contentId) {
+                    exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId) && String(e.contentId) === String(contentId));
+                } else {
+                    exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId) && !e.contentId);
+                }
+                
+                window.tempExam = exam ? JSON.parse(JSON.stringify(exam)) : { courseId: String(courseId), passScore: 60, questions: [] };
+                if (contentId) window.tempExam.contentId = String(contentId);
                 if (!window.tempExam.questions) window.tempExam.questions = [];
+                
+                const isWorkshop = !!contentId;
+                const titleText = isWorkshop ? "Configurar Taller" : "Configurar Examen Final";
                 
                 const generateHtml = () => {
                     const questionsHtml = window.tempExam.questions.map((q, idx) => `
@@ -1715,8 +1714,8 @@
                     `).join("");
                     
                     return `
-                        <h3 class="mb-4">Configurar Examen Final</h3>
-                        <form onsubmit="event.preventDefault(); window.AdminViews.saveExam('${courseId}')">
+                        <h3 class="mb-4">${titleText}</h3>
+                        <form onsubmit="event.preventDefault(); window.AdminViews.saveExam('${courseId}', ${contentId ? `'${contentId}'` : 'null'})">
                             <div class="form-group">
                                 <label>Puntaje mínimo para aprobar (%)</label>
                                 <input type="number" id="exam-score" class="form-control" value="${window.tempExam.passScore}" min="1" max="100" required>
@@ -1725,7 +1724,7 @@
                             <button type="button" class="btn btn-outline w-full mb-4" onclick="window.AdminViews.addTempQuestion()">Agregar Pregunta</button>
                             <div class="flex justify-between flex-wrap gap-2">
                                 <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
-                                <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar Examen</button>
+                                <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar</button>
                             </div>
                         </form>
                     `;
@@ -1743,7 +1742,7 @@
                     window.AdminViews.refreshExamBuilder();
                 };
             },
-            saveExam: function(courseId) {
+            saveExam: function(courseId, contentId = null) {
                 if (window.tempExam.questions.length === 0) {
                     return window.UI.showAlert("Agregue al menos una pregunta.");
                 }
@@ -1753,14 +1752,22 @@
                     window.tempExam.passScore = parseInt(scoreInput.value);
                 }
                 
-                const existingExam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
+                let existingExam;
+                if (contentId) {
+                    existingExam = window.DB.get("exams").find((e) => String(e.contentId) === String(contentId));
+                } else {
+                    existingExam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId) && !e.contentId);
+                }
+                
                 if (existingExam) {
                     window.DB.update("exams", existingExam.id, {
                         passScore: window.tempExam.passScore,
                         questions: window.tempExam.questions
                     });
                 } else {
-                    window.DB.add("exams", window.tempExam);
+                    const dataToSave = { ...window.tempExam, courseId: String(courseId) };
+                    if (contentId) dataToSave.contentId = String(contentId);
+                    window.DB.add("exams", dataToSave);
                 }
                 
                 window.UI.closeModal();
@@ -2117,10 +2124,10 @@
                     <div class="mb-4">
                         <div class="p-4 bg-primary text-white rounded-lg shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));">
                             <div class="flex items-center gap-3">
-                                <svg class="icon" style="width:2.5rem;height:2.5rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                <svg class="icon" style="width:2.5rem;height:2.5rem; color: white;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                                 <div>
                                     <h3 class="m-0 text-white font-bold text-xl">Próxima Fecha de Corte</h3>
-                                    <p class="m-0 opacity-90">${cutoffDateStr}</p>
+                                    <p class="m-0 opacity-90 text-white">${cutoffDateStr}</p>
                                 </div>
                             </div>
                         </div>
@@ -2254,7 +2261,7 @@
                 }
 
                 const contents = window.DB.get("contents").filter((c) => String(c.courseId) === courseId);
-                const exam = window.DB.get("exams").find((e) => String(e.courseId) === courseId);
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === courseId && !e.contentId);
                 
                 let progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === courseId);
                 if (!progress) {
@@ -2333,7 +2340,7 @@
                     <div class="course-view-layout">
                         <div class="flex-col gap-4 w-full">
                             <div class="video-container" id="player-area">
-                                ${currentContent ? window.StudentViews.generatePlayerHtml(currentContent) : '<div class="w-full text-center p-6 bg-bg"><p class="text-gray font-bold">Seleccione un contenido del temario para comenzar</p></div>'}
+                                ${currentContent ? window.StudentViews.generatePlayerHtml(currentContent, courseId, progress) : '<div class="w-full text-center p-6 bg-bg"><p class="text-gray font-bold">Seleccione un contenido del temario para comenzar</p></div>'}
                             </div>
 
                             <div id="btn-container-area">
@@ -2382,7 +2389,7 @@
                     window.Router.navigate("student-course", { id: courseId });
                 }
             },
-            generatePlayerHtml: function(content) {
+            generatePlayerHtml: function(content, courseId, progress) {
                 if (content.type === "video") {
                     const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
                     const match = content.url.match(ytRegex);
@@ -2398,85 +2405,109 @@
                         `;
                     }
                     return `<div class="video-wrapper"><iframe src="${content.url}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-                } else if (content.type === "pdf") {
-                    return `
-                        <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
-                            <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                            <h3 class="mb-2">Documento de Lectura (PDF)</h3>
-                            <p class="text-gray mb-6 max-w-lg mx-auto">Haz clic en el botón inferior para abrir el documento en una nueva pestaña. Podrás visualizarlo a pantalla completa o descargarlo en tu dispositivo.</p>
-                            <a href="${content.url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg w-full sm:w-auto px-8">Abrir / Descargar Documento</a>
-                        </div>
-                    `;
-                } else if (content.type === "taller") {
-                    const studentId = String(window.State.currentUser.id);
-                    const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(content.courseId));
-                    const completedIds = progress?.completedContentIds || [];
-
-                    if (completedIds.includes(String(content.id))) {
+                }
+                
+                if (content.type === "taller") {
+                    const hasPassed = progress?.completedContentIds?.includes(String(content.id));
+                    if (hasPassed) {
                         return `
-                            <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded border-success" style="min-height: 300px; border-width: 2px;">
-                                <svg class="icon mx-auto mb-4 text-success" style="width: 60px; height: 60px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                <h3 class="mb-2 text-success">¡Taller Completado!</h3>
-                                <p class="text-gray max-w-lg mx-auto">Ya has aprobado este taller. Puedes continuar con el siguiente módulo.</p>
+                            <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
+                                <svg class="icon mx-auto mb-4 text-success" style="width: 60px; height: 60px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <h3 class="mb-2">Taller Completado</h3>
+                                <p class="text-gray mb-6">Has aprobado este taller exitosamente y tu progreso fue guardado.</p>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" id="taller-container-${content.id}" style="min-height: 300px; border-color: var(--border);">
+                                <svg class="icon mx-auto mb-4 text-primary" style="width: 60px; height: 60px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                <h3 class="mb-2">Taller de Conocimientos</h3>
+                                <p class="text-gray mb-6 max-w-lg mx-auto">Este módulo es un taller interactivo. Debes completarlo para poder avanzar al siguiente módulo.</p>
+                                <button onclick="window.StudentViews.startWorkshop('${courseId}', '${content.id}')" class="btn btn-primary btn-lg w-full sm:w-auto px-8">Comenzar Taller</button>
                             </div>
                         `;
                     }
-
-                    const qs = content.questions || [];
-                    if(qs.length === 0) return `<div class="p-6 text-center text-gray bg-white rounded border">Este taller aún no tiene preguntas configuradas.</div>`;
-
-                    let tallerHtml = `
-                        <div class="p-6 bg-white rounded border text-left" style="border-color: var(--border);">
-                            <h3 class="mb-2 text-xl font-bold">Taller: ${content.title}</h3>
-                            <p class="text-sm text-gray mb-6 border-b pb-4">Responde las siguientes preguntas. Puntaje para aprobar: <strong>${content.passScore || 60}%</strong></p>
-                            <form id="taller-form-${content.id}" onsubmit="event.preventDefault(); window.StudentViews.submitTaller('${content.courseId}', '${content.id}')">
-                    `;
-                    
-                    qs.forEach((q, idx) => {
-                        tallerHtml += `
-                            <div class="mb-6 p-4 bg-bg rounded">
-                                <h4 class="mb-3 text-text">${idx + 1}. ${q.q}</h4>
-                                ${q.options.map((opt, oIdx) => `
-                                    <div class="mb-2 flex items-center gap-2 cursor-pointer text-gray">
-                                        <input type="radio" name="tq_${idx}" value="${oIdx}" required style="transform: scale(1.2);">
-                                        <span style="word-break:break-word;">${opt}</span>
-                                    </div>
-                                `).join("")}
-                            </div>
-                        `;
-                    });
-
-                    tallerHtml += `
-                                <button type="submit" class="btn btn-primary btn-lg w-full mt-2" id="btn-submit-taller-${content.id}">Enviar Respuestas</button>
-                            </form>
-                        </div>
-                    `;
-                    return tallerHtml;
+                }
+                
+                return `
+                    <div class="text-center p-6 w-full flex-col items-center justify-center bg-white text-text border rounded" style="min-height: 300px; border-color: var(--border);">
+                        <svg class="icon mx-auto mb-4" style="width: 60px; height: 60px; color: var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        <h3 class="mb-2">Documento de Lectura (PDF)</h3>
+                        <p class="text-gray mb-6 max-w-lg mx-auto">Haz clic en el botón inferior para abrir el documento en una nueva pestaña. Podrás visualizarlo a pantalla completa o descargarlo en tu dispositivo.</p>
+                        <a href="${content.url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg w-full sm:w-auto px-8">Abrir / Descargar Documento</a>
+                    </div>
+                `;
+            },
+            startWorkshop: function(courseId, contentId) {
+                const exam = window.DB.get("exams").find((e) => String(e.contentId) === String(contentId));
+                if (!exam || !exam.questions || exam.questions.length === 0) {
+                    return window.UI.showAlert("Este taller aún no tiene preguntas configuradas por el docente.");
+                }
+                
+                let shuffledQuestions = exam.questions.map((q, qIndex) => {
+                    let options = q.options.map((text, oIndex) => ({ text, isCorrect: oIndex === q.correctIdx }));
+                    window.shuffleArray(options);
+                    let newCorrectIdx = options.findIndex((o) => o.isCorrect);
+                    return { q: q.q, options: options.map((o) => o.text), correctIdx: newCorrectIdx };
+                });
+                
+                window.shuffleArray(shuffledQuestions);
+                window.tempWorkshopExam = { passScore: exam.passScore || 60, questions: shuffledQuestions, contentId: contentId, courseId: courseId };
+                
+                let html = `
+                    <div class="text-left w-full">
+                        <h3 class="mb-4">Desarrollo del Taller</h3>
+                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo requerido para aprobar: <strong>${window.tempWorkshopExam.passScore}%</strong></p>
+                        <form id="workshop-form" onsubmit="event.preventDefault(); window.StudentViews.submitWorkshop()">
+                            ${window.tempWorkshopExam.questions.map((q, idx) => `
+                                <div class="mb-6 p-4 bg-bg rounded">
+                                    <h4 class="mb-3 text-text">${idx + 1}. ${q.q}</h4>
+                                    ${q.options.map((opt, oIdx) => `
+                                        <div class="mb-2 flex items-center gap-2 cursor-pointer text-gray">
+                                            <input type="radio" name="wq_${idx}" value="${oIdx}" required style="transform: scale(1.2);">
+                                            <span style="word-break:break-word;">${opt}</span>
+                                        </div>
+                                    `).join("")}
+                                </div>
+                            `).join("")}
+                            <button type="submit" class="btn btn-primary btn-lg w-full mt-4" id="submit-workshop-btn">Enviar Respuestas</button>
+                        </form>
+                    </div>
+                `;
+                
+                const container = document.getElementById(`taller-container-${contentId}`);
+                if (container) {
+                    container.innerHTML = html;
+                    container.classList.remove('items-center', 'justify-center', 'text-center');
+                    container.classList.add('items-start');
                 }
             },
-            submitTaller: function(courseId, contentId) {
-                const content = window.DB.get("contents").find(c => String(c.id) === String(contentId));
-                if (!content || !content.questions) return;
+            submitWorkshop: function() {
+                const submitBtn = document.getElementById("submit-workshop-btn");
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Evaluando..."; }
                 
-                const formEl = document.getElementById(`taller-form-${contentId}`);
+                const formEl = document.getElementById("workshop-form");
                 let correctCount = 0;
-
-                content.questions.forEach((q, idx) => {
-                    const selectedInput = formEl.elements[`tq_${idx}`];
+                
+                window.tempWorkshopExam.questions.forEach((q, idx) => {
+                    const selectedInput = formEl.elements[`wq_${idx}`];
                     const val = selectedInput ? selectedInput.value : null;
                     if (val !== null && parseInt(val) === q.correctIdx) {
                         correctCount++;
                     }
                 });
-
-                const passScore = content.passScore || 60;
-                const percentage = content.questions.length > 0 ? Math.round((correctCount / content.questions.length) * 100) : 0;
-
-                if (percentage >= passScore) {
-                    window.UI.showAlert(`<b>¡Excelente!</b><br><br>Aprobaste el taller con un puntaje de <b>${percentage}%</b>.<br>Se marcará como completado.`);
-                    window.StudentViews.markCompleted(courseId, contentId);
+                
+                const percentage = window.tempWorkshopExam.questions.length > 0 
+                    ? Math.round((correctCount / window.tempWorkshopExam.questions.length) * 100)
+                    : 0;
+                const passed = percentage >= window.tempWorkshopExam.passScore;
+                
+                if (passed) {
+                    window.UI.showAlert(`¡Excelente! Has aprobado el taller con <b>${percentage}%</b>. Tu avance ha sido guardado automáticamente.`);
+                    window.StudentViews.markCompleted(window.tempWorkshopExam.courseId, window.tempWorkshopExam.contentId);
                 } else {
-                    window.UI.showAlert(`<b>Inténtalo de nuevo</b><br><br>Obtuviste un <b>${percentage}%</b>, pero necesitas al menos un <b>${passScore}%</b> para aprobar este taller.`);
+                    window.UI.showAlert(`Obtuviste <b>${percentage}%</b>. Necesitas al menos ${window.tempWorkshopExam.passScore}% para aprobar este taller. Por favor, repasa e intenta de nuevo.`);
+                    window.Router.navigate("student-course", { id: window.tempWorkshopExam.courseId });
                 }
             },
             changeContent: function(courseId, contentId, event) {
@@ -2484,9 +2515,12 @@
                     .filter((c) => String(c.courseId) === String(courseId))
                     .find((c) => String(c.id) === String(contentId));
                     
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                    
                 const playerArea = document.getElementById("player-area");
                 if (playerArea && content) {
-                    playerArea.innerHTML = window.StudentViews.generatePlayerHtml(content);
+                    playerArea.innerHTML = window.StudentViews.generatePlayerHtml(content, courseId, progress);
                 }
                 
                 document.querySelectorAll(".content-item").forEach((el) => el.classList.remove("active"));
@@ -2494,13 +2528,10 @@
                     event.currentTarget.classList.add("active");
                 }
                 
-                const studentId = String(window.State.currentUser.id);
-                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
-                
                 const btnArea = document.getElementById("btn-container-area");
                 if (btnArea) {
                     const completedIds = progress?.completedContentIds || [];
-                    if (completedIds.includes(String(contentId)) || content.type === 'taller') {
+                    if (completedIds.includes(String(contentId)) || content?.type === 'taller') {
                         btnArea.innerHTML = "";
                     } else {
                         btnArea.innerHTML = `
@@ -2528,7 +2559,7 @@
                 window.Router.navigate("student-course", { id: courseId });
             },
             renderExam: function(container, courseId) {
-                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId));
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId) && !e.contentId);
                 const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
                 
                 let shuffledQuestions = (exam?.questions || []).map((q, qIndex) => {
@@ -2682,145 +2713,221 @@
                     certs = certs.filter(c => myCourseIds.includes(String(c.courseId)));
                 }
                 
+                const studentId = String(window.State.currentUser.id);
+                if (window.State.currentUser.role !== "admin" && window.State.currentUser.role !== "docente") {
+                    certs = certs.filter((c) => String(c.studentId) === studentId);
+                }
+
                 const users = window.DB.get("users");
                 const courses = window.DB.get("courses");
                 
                 let html = `
                     <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h3 class="m-0">Certificados de Alumnos</h3>
-                            <button class="btn btn-outline btn-sm ${window.State.currentUser.role === 'docente' ? 'hidden' : ''}" onclick="window.AdminViews.openCertConfigModal()">Diseño PDF</button>
-                            <button class="btn btn-success btn-sm" onclick="window.AdminViews.exportCertsData()">Exportar CSV</button>
-                        </div>
-                        <input type="text" class="form-control flex-1 max-w-lg w-full sm:w-auto" placeholder="Buscar por estudiante o curso..." onkeyup="window.UIHelpers.filterTable(this, 'admin-certs-table')">
+                        <h3 class="m-0">Mis Certificados</h3>
                     </div>
-                    <div class="card table-responsive">
-                        <table id="admin-certs-table">
-                            <thead><tr><th>Estudiante</th><th>Curso</th><th>Puntaje</th><th>Estado</th><th>Acciones</th></tr></thead>
-                            <tbody>
+                    <div class="course-grid">
                 `;
                 
                 if (certs.length === 0) {
-                    html += '<tr><td colspan="5" class="text-center text-gray">No hay registros</td></tr>';
+                    html += '<p class="text-gray">No tienes certificados aún. Completa un curso y aprueba el examen.</p>';
                 }
                 
                 certs.forEach((cert) => {
-                    const student = users.find((u) => String(u.id) === String(cert.studentId));
                     const course = courses.find((c) => String(c.id) === String(cert.courseId));
-                    
-                    if (student && course) {
-                        const badgeClass = cert.status === "pending" ? "badge-warning" : cert.status === "approved" ? "badge-success" : "badge-danger";
-                        const statusText = cert.status === "pending" ? "Pendiente" : cert.status === "approved" ? "Aprobado" : "Rechazado";
-                        
+                    if (course) {
+                        const topColor = cert.status === "approved" ? "var(--success)" : cert.status === "rejected" ? "var(--danger)" : "var(--warning)";
+                        const cName = course.name || "Curso no especificado";
+
                         html += `
-                            <tr>
-                                <td>${student.name}</td>
-                                <td>${course.name}</td>
-                                <td><span class="font-bold">${cert.score}%</span></td>
-                                <td><span class="badge ${badgeClass}">${statusText}</span></td>
-                                <td>
-                                    <div class="flex gap-2 flex-wrap">
-                                        <button class="btn btn-sm btn-outline" title="Ver Detalles Examen" onclick="window.AdminViews.viewExamDetails('${student.id}', '${course.id}')">Detalles</button>
-                                        ${cert.status === "pending" ? `
-                                            <button class="btn btn-sm btn-success" title="Aprobar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'approved')">Aprobar</button>
-                                            <button class="btn btn-sm btn-danger" title="Rechazar" onclick="window.AdminViews.updateCertStatus('${cert.id}', 'rejected')">Rechazar</button>
-                                        ` : cert.status === "approved" ? `
-                                            <button class="btn btn-sm btn-primary" title="Editar Certificado" onclick="window.AdminViews.openEditCertModal('${cert.id}', '${student.name.replace(/'/g, "\\\\'")}', '${course.name.replace(/'/g, "\\\\'")}')">Editar</button>
-                                            <button class="btn btn-sm btn-secondary" title="Descargar" onclick="window.StudentViews.viewDiploma('${course.name.replace(/'/g, "\\\\'")}', '${student.name.replace(/'/g, "\\\\'")}', '${cert.id}')">Descargar</button>
-                                        ` : ""}
-                                    </div>
-                                </td>
-                            </tr>
+                            <div class="card text-center flex-col justify-between" style="border-top: 4px solid ${topColor};">
+                                <div>
+                                    <h4 class="mb-2 text-text">${cName}</h4>
+                                    <p class="text-sm text-gray mb-2">Puntaje obtenido: ${cert.score}%</p>
+                                </div>
                         `;
+                        
+                        if (cert.status === "pending") {
+                            html += `
+                                <div>
+                                    <span class="badge badge-warning mb-4 inline-block">En Revisión</span>
+                                    <p class="text-xs text-gray">Esperando aprobación del administrador o docente.</p>
+                                </div>
+                            `;
+                        } else if (cert.status === "rejected") {
+                            html += `
+                                <div>
+                                    <span class="badge badge-danger mb-4 inline-block">Rechazado</span>
+                                    <p class="text-xs text-gray">Comunícate con soporte.</p>
+                                </div>
+                            `;
+                        } else {
+                            html += `
+                                <div>
+                                    <span class="badge badge-success mb-4 inline-block">Aprobado</span>
+                                    <div class="action-grid cols-1 m-0 p-0 border-none">
+                                        <button class="btn-card primary" onclick="window.StudentViews.viewDiploma('${cName.replace(/'/g, "\\\\'")}', '${window.State.currentUser.name.replace(/'/g, "\\\\'")}', '${cert.id}')">
+                                            <span>Ver Diploma</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        html += `</div>`;
                     }
                 });
                 
-                html += `</tbody></table></div>`;
+                html += `</div>`;
                 container.innerHTML = html;
             },
-            viewExamDetails: function(studentId, courseId) {
-                const results = window.DB.get("exam_results")
-                    .filter((r) => String(r.studentId) === String(studentId) && String(r.courseId) === String(courseId))
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
-                    
-                if (results.length === 0) {
-                    return window.UI.showAlert("No hay detalles del examen registrados (versión antigua).");
+            viewDiploma: function(courseName, studentName, certId) {
+                window.UI.showAlert("Generando certificado en PDF, por favor espera...");
+                
+                try {
+                    window.StudentViews.generateCertificatePDF({ courseName, studentName, certId });
+                } catch (err) {
+                    window.UI.showAlert("Error interno al procesar el certificado: " + err.message);
                 }
-                
-                const recentResult = results[0];
-                const detailsHtml = recentResult.details.map((d, idx) => `
-                    <div class="mb-4 p-4 rounded border ${d.esCorrecta ? "bg-bg border-success" : "border-danger"}" style="background: ${d.esCorrecta ? "var(--bg)" : "#fef2f2"}; border-left-width: 4px;">
-                        <p class="font-semibold mb-2 text-text">${idx + 1}. ${d.pregunta}</p>
-                        <p class="text-sm text-gray">Respuesta Usuario: <span class="font-semibold ${d.esCorrecta ? "text-success" : "text-danger"}">${d.respuestaUsuario}</span></p>
-                        ${d.esCorrecta ? "" : `<p class="text-sm text-gray">Respuesta Correcta: <span class="font-semibold text-success">${d.respuestaCorrecta}</span></p>`}
-                    </div>
-                `).join("");
-                
-                window.UI.showModal(`
-                    <h3 class="mb-4">Detalle del Examen</h3>
-                    <p class="mb-2"><strong>Puntaje Obtenido:</strong> <span class="font-bold text-primary">${recentResult.score}%</span></p>
-                    <p class="mb-4 text-gray text-sm"><strong>Fecha de presentación:</strong> ${new Date(recentResult.date).toLocaleString()}</p>
-                    <div style="max-height: 400px; overflow-y: auto; padding-right:10px;">
-                        ${detailsHtml}
-                    </div>
-                    <div class="text-center mt-6">
-                        <button class="btn btn-secondary w-full" onclick="window.UI.closeModal()">Cerrar</button>
-                    </div>
-                `);
             },
-            openEditCertModal: function(certId, defaultName, defaultCourse) {
-                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
-                if (!cert) return;
+            generateCertificatePDF: function(data) {
+                const { courseName, studentName, certId } = data;
+                const cert = window.DB.get("certificates").find(c => String(c.id) === String(certId)) || {};
+                const user = window.DB.get("users").find(u => String(u.id) === String(cert.studentId)) || {};
+                const courseObj = window.DB.get("courses").find(c => String(c.id) === String(cert.courseId)) || {};
+                const docId = user.document || "No registrado";
+                const cHours = courseObj.hours || 48;
                 
-                const nameToShow = cert.overrideName || defaultName;
-                const courseToShow = cert.overrideCourse || defaultCourse;
-                const dateToShow = cert.overrideDate || new Date().toISOString().split("T")[0];
+                const d = cert.overrideDate ? new Date(cert.overrideDate + "T00:00:00") : new Date();
+                const dStr = `Dado en Barranquilla, a los ${d.getDate()} de ${["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][d.getMonth()]} de ${d.getFullYear()}`;
                 
-                window.UI.showModal(`
-                    <h3 class="mb-4">Editar Datos Impresos del Certificado</h3>
-                    <form onsubmit="event.preventDefault(); window.AdminViews.saveCertEdits('${certId}', this)">
-                        <div class="form-group">
-                            <label>Nombre a mostrar</label>
-                            <input type="text" name="name" class="form-control" value="${nameToShow}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Curso a mostrar</label>
-                            <input type="text" name="course" class="form-control" value="${courseToShow}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Fecha de Emisión</label>
-                            <input type="date" name="date" class="form-control" value="${dateToShow}" required>
-                        </div>
-                        <div class="flex justify-between mt-4 flex-wrap gap-2">
-                            <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="window.UI.closeModal()">Cancelar</button>
-                            <button type="submit" class="btn btn-primary w-full sm:w-auto">Guardar</button>
-                        </div>
-                    </form>
-                `);
-            },
-            saveCertEdits: function(certId, formEl) {
-                window.DB.update("certificates", certId, {
-                    overrideName: formEl.elements.name.value,
-                    overrideCourse: formEl.elements.course.value,
-                    overrideDate: formEl.elements.date.value
+                const fName = (cert.overrideName || studentName).toUpperCase();
+                const fCourse = (cert.overrideCourse || courseName).toUpperCase();
+
+                const loadJsPdf = () => window.jspdf ? Promise.resolve() : new Promise((res, rej) => {
+                    const s = document.createElement("script");
+                    s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+                    s.onload = res; s.onerror = rej; document.head.appendChild(s);
                 });
-                window.UI.closeModal();
-                window.Router.navigate("admin-certs");
-            },
-            updateCertStatus: function(certId, status) {
-                window.DB.update("certificates", certId, { status: status });
-                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
-                
-                const msg = status === "approved" 
-                    ? "¡Tu certificado ha sido aprobado y está listo para descargar!" 
-                    : "Tu solicitud de certificado fue rechazada.";
+
+                const getB64 = (url) => new Promise(res => {
+                    if(!url) return res(null);
+                    const img = new Image(); img.crossOrigin = "Anonymous";
+                    img.onload = () => {
+                        const cvs = document.createElement("canvas"); cvs.width = img.width; cvs.height = img.height;
+                        cvs.getContext("2d").drawImage(img, 0, 0); res(cvs.toDataURL("image/png"));
+                    };
+                    img.onerror = () => res(null); img.src = url;
+                });
+
+                const cfg = window.DB.get("cert_config")[0] || {};
+                const defs = {
+                    h1: "Institución de Educación", h2: "para el Trabajo y Desarrollo Humano",
+                    sh1: "Aprobado por la Secretaria de Educación Distrital de Barranquilla mediante Resolución N° 06077 del 19 de octubre de 2023.",
+                    sh2: "Educación para el Trabajo y Desarrollo Humano.", constar: "Hace constar que :",
+                    aprobo: "Aprobó el curso de:", duracion: "Con una duración de ( {horas} horas).",
+                    vigencia: "( vigencia 2 años )", f1n: "KELLY PATRICIA REYES UTRIA", f1r: "Directora",
+                    f2n: "NEDIS FERNANDEZ BARRANCO", f2r: "Coordinadora Académica",
+                    ft1: "funetec2022@gmail.com", ft2: "calle 47#18_24 Barranquilla", ft3: "3046781679"
+                };
+                const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
+
+                Promise.all([
+                    loadJsPdf(), 
+                    getB64(val('f1img')), 
+                    getB64(val('f2img')),
+                    getB64('https://image2url.com/r2/default/images/1775071648590-9b1104bf-6774-470c-bcb6-9672d743f144.png'), // email icon
+                    getB64('https://image2url.com/r2/default/images/1775071789052-124cd7a8-b4d7-4cc4-be4b-292c9219cfa1.avif'), // map icon
+                    getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg'),  // phone icon
+                    getB64('https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg'),   // Logo principal
+                    getB64('https://res.cloudinary.com/dkufuo5wc/image/upload/v1780057609/6750cf40-8cdc-4d76-b7d2-b343841e8ca7_zahbl3.jpg') // Fondo Marca de agua
+                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon, mainLogo, watermarkImg]) => {
+                    const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
+                    const cX = 148.5; 
                     
-                window.notifyUser(cert.studentId, msg);
-                window.Router.navigate("admin-certs");
+                    // Colocar fondo primero
+                    if (watermarkImg) {
+                        pdf.addImage(watermarkImg, "JPEG", 0, 0, 297, 210);
+                    }
+
+                    const T = (txt, y, sz, fnt="helvetica", st="normal", clr=0, x=cX, al="center") => {
+                        pdf.setTextColor(clr); pdf.setFont(fnt, st); pdf.setFontSize(sz);
+                        pdf.text(txt, x, y, { align: al });
+                    };
+
+                    // Logo
+                    if (mainLogo) {
+                        pdf.addImage(mainLogo, "PNG", cX - 17.5, 8, 35, 35);
+                    } else {
+                        pdf.setFillColor(153, 27, 27); pdf.rect(cX-10, 15, 5, 18, 'F');
+                        pdf.setFillColor(225, 29, 42); pdf.rect(cX-3, 10, 5, 23, 'F');
+                        pdf.setFillColor(252, 165, 165); pdf.rect(cX+4, 15, 5, 18, 'F');
+                        T("FUNETEC", 38, 12, "helvetica", "bold");
+                    }
+
+                    // Textos principales
+                    T(val('h1'), 55, 26, "times", "bold");
+                    T(val('h2'), 65, 26, "times", "bold");
+                    T(val('sh1'), 75, 10, "helvetica", "normal", 50);
+                    T(val('sh2'), 80, 10, "helvetica", "normal", 50);
+                    T(val('constar'), 95, 14);
+                    T(fName, 115, 32, "times", "bold");
+                    T(`Identificado con cédula de ciudadanía N.º ${docId}`, 125, 11);
+                    T(val('aprobo'), 140, 14);
+                    T(fCourse, 155, 28, "times", "bold");
+                    
+                    let durText = val('duracion') || "";
+                    if (durText.includes('{horas}')) durText = durText.replace('{horas}', cHours);
+                    else durText = durText.replace('48', cHours);
+
+                    T(durText, 170, 11, "helvetica", "normal", 50);
+                    T(dStr, 176, 11, "helvetica", "normal", 50);
+                    T(val('vigencia'), 182, 11, "helvetica", "normal", 50);
+
+                    // Firmas (Con imágenes)
+                    pdf.setDrawColor(0); pdf.setLineWidth(0.5);
+                    
+                    // Firma 1
+                    pdf.line(40, 180, 110, 180);
+                    if(s1b64) pdf.addImage(s1b64, "PNG", 50, 155, 50, 24);
+                    T(val('f1n'), 185, 9, "helvetica", "bold", 0, 75);
+                    T(val('f1r'), 190, 9, "helvetica", "normal", 0, 75);
+
+                    // Firma 2
+                    pdf.line(187, 180, 257, 180);
+                    if(s2b64) pdf.addImage(s2b64, "PNG", 197, 155, 50, 24);
+                    T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
+                    T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
+
+                    // Footer con los iconos correctos cargados externamente
+                    const footerData = [
+                        { x: 45, text: val('ft1'), icon: emailIcon },
+                        { x: 120, text: val('ft2'), icon: mapIcon },
+                        { x: 215, text: val('ft3'), icon: phoneIcon }
+                    ];
+
+                    footerData.forEach(f => {
+                        if (f.icon) {
+                            // Se ubica el icono de forma centrada donde iba el circulo rojo original (f.x, 198)
+                            pdf.addImage(f.icon, "PNG", f.x - 3, 195, 6, 6);
+                        } else {
+                            // Fallback de seguridad en caso de que la imagen no cargue
+                            pdf.setFillColor(225, 29, 42); 
+                            pdf.circle(f.x, 198, 2.5, 'F');
+                        }
+                        T(f.text, 199.5, 9, "helvetica", "bold", 50, f.x + 5, "left");
+                    });
+
+                    pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
+                    window.UI.closeModal();
+
+                }).catch((error) => {
+                    console.error("Error crítico generando el PDF:", error);
+                    window.UI.showAlert("Error al generar el certificado en PDF. Verifique su conexión a internet.");
+                });
             }
         };
 
-        document.addEventListener("DOMContentLoaded", () => {
+        const initAppLogic = () => {
             try {
                 const loadingEl = document.getElementById("loading-db");
                 const formEl = document.getElementById("login-form");
@@ -2870,7 +2977,14 @@
             } catch (error) {
                 console.error("Error en la inicialización de DOMContentLoaded:", error);
             }
-        });
+        };
+
+        // Fix de Race Condition:
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initAppLogic);
+        } else {
+            initAppLogic();
+        }
     </script>
 </body>
 </html>
