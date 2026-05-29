@@ -812,6 +812,7 @@
                         case "admin-users": window.AdminViews.renderUsers(mainArea); break;
                         case "admin-courses": window.AdminViews.renderCourses(mainArea); break;
                         case "admin-course-detail": window.AdminViews.renderCourseDetail(mainArea, params.id); break;
+                        case "admin-audit": window.AdminViews.renderAudit(mainArea, params.id); break;
                         case "admin-certs": window.AdminViews.renderCerts(mainArea); break;
                         case "student-dashboard": window.StudentViews.renderDashboard(mainArea); break;
                         case "student-course": window.StudentViews.renderCourse(mainArea, params.id); break;
@@ -1304,6 +1305,11 @@
                     courses = courses.filter(c => myCourseIds.includes(String(c.id)));
                 }
 
+                // Identificador estricto para el auditor
+                const isSuperAdmin = window.State.currentUser.document === "admin@funetec.com" || window.State.currentUser.email === "admin@funetec.com";
+                // FIX: Cambiamos cols-4 a cols-2 para que los 4 botones se acomoden en una cuadrícula de 2x2 sin aplastarse
+                const gridClass = isSuperAdmin ? "action-grid cols-2" : "action-grid cols-3";
+
                 let html = `
                     <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
                         <h3 class="m-0">Gestión de Cursos</h3>
@@ -1340,10 +1346,11 @@
                                     <p class="text-sm text-gray mb-2">${cDesc.length > 50 ? cDesc.substring(0, 50) + "..." : cDesc}</p>
                                     <span class="badge badge-primary">${contentCount} Módulos</span>
                                 </div>
-                                <div class="action-grid cols-3">
+                                <div class="${gridClass}">
                                     <button class="btn-card" onclick="window.Router.navigate('admin-course-detail', {id: '${course.id}'})"><span>Contenido</span></button>
                                     <button class="btn-card" onclick="window.AdminViews.openCourseModal('${course.id}')"><span>Editar</span></button>
                                     <button class="btn-card danger" onclick="window.AdminViews.confirmDeleteCourse('${course.id}')"><span>Eliminar</span></button>
+                                    ${isSuperAdmin ? `<button class="btn-card warning" onclick="window.Router.navigate('admin-audit', {id: '${course.id}'})"><span>Auditoría</span></button>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -1498,25 +1505,94 @@
                 window.UI.closeModal();
                 window.Router.navigate("admin-courses");
             },
-            moveContent: function(courseId, contentId, direction) {
-                let contents = window.DB.get("contents").filter((c) => String(c.courseId) === String(courseId));
+            renderAudit: function(container, courseId) {
+                const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
+                if (!course) return;
+
+                const contents = window.DB.get("contents").filter((c) => String(c.courseId) === String(courseId));
                 contents.forEach((c, index) => { if (typeof c.order !== 'number') c.order = index; });
                 contents.sort((a, b) => a.order - b.order);
-                
-                const index = contents.findIndex(c => String(c.id) === String(contentId));
-                if (index < 0) return;
-                
-                const targetIndex = index + direction;
-                if (targetIndex < 0 || targetIndex >= contents.length) return;
-                
-                const tempOrder = contents[index].order;
-                contents[index].order = contents[targetIndex].order;
-                contents[targetIndex].order = tempOrder;
-                
-                window.DB.update("contents", contents[index].id, { order: contents[index].order });
-                window.DB.update("contents", contents[targetIndex].id, { order: contents[targetIndex].order });
-                
-                window.AdminViews.renderCourseDetail(document.getElementById("main-content-area"), courseId);
+
+                const exams = window.DB.get("exams").filter((e) => String(e.courseId) === String(courseId));
+                const finalExam = exams.find(e => !e.contentId);
+
+                let html = `
+                    <div class="flex justify-between items-center mb-4 mobile-stack">
+                        <h3 class="truncate w-full sm:w-auto">Auditoría: ${course.name}</h3>
+                        <button class="btn btn-secondary w-full sm:w-auto" onclick="window.Router.navigate('admin-courses')">Volver</button>
+                    </div>
+                    <div class="card flex-col gap-6" style="box-sizing:border-box;">
+                        <h4 class="font-bold border-b pb-2 mb-4">Contenido Subido (Módulos y Talleres)</h4>
+                `;
+
+                if (contents.length === 0) {
+                    html += '<p class="text-gray">No hay contenido subido en este curso.</p>';
+                }
+
+                contents.forEach((content, idx) => {
+                    html += `
+                        <div class="p-4 mb-4 border rounded" style="border-color: var(--border);">
+                            <div class="font-bold mb-3">${idx + 1}. ${content.title} <span class="badge badge-secondary ml-2">${content.type}</span></div>
+                    `;
+
+                    if (content.type === 'video' || content.type === 'pdf') {
+                        html += `
+                            <a href="${content.url}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+                                Ver ${content.type === 'video' ? 'Video' : 'Documento PDF'}
+                            </a>
+                        `;
+                    } else if (content.type === 'taller') {
+                        const workshopExam = exams.find(e => String(e.contentId) === String(content.id));
+                        if (!workshopExam || !workshopExam.questions || workshopExam.questions.length === 0) {
+                            html += `<p class="text-warning text-sm mt-2 font-bold">No hay preguntas configuradas para este taller.</p>`;
+                        } else {
+                            html += `<div><p class="font-semibold text-sm mb-2">Preguntas del Taller (Puntaje exigido: ${workshopExam.passScore}%):</p>`;
+                            workshopExam.questions.forEach((q, qIdx) => {
+                                html += `
+                                    <div class="mb-3 pl-4 border-l-2" style="border-color: var(--primary);">
+                                        <p class="text-sm font-semibold">${qIdx + 1}. ${q.q}</p>
+                                        <ul class="text-sm text-gray mt-1 ml-4" style="list-style-type: disc;">
+                                `;
+                                q.options.forEach((opt, optIdx) => {
+                                    const isCorrect = q.correctIdx === optIdx;
+                                    html += `<li class="${isCorrect ? 'text-success font-bold' : ''}">${opt} ${isCorrect ? ' ✓ (Respuesta Correcta)' : ''}</li>`;
+                                });
+                                html += `</ul></div>`;
+                            });
+                            html += `</div>`;
+                        }
+                    }
+                    html += `</div>`;
+                });
+
+                html += `
+                    <h4 class="font-bold border-b pb-2 mt-6 mb-4">Evaluación Final</h4>
+                `;
+
+                if (!finalExam || !finalExam.questions || finalExam.questions.length === 0) {
+                    html += `<p class="text-warning mb-4 font-bold">No hay examen final configurado para este curso.</p>`;
+                } else {
+                    html += `
+                        <div class="p-4 border rounded bg-bg" style="border-color: var(--border);">
+                            <p class="font-semibold mb-4">Puntaje mínimo para aprobar: ${finalExam.passScore}%</p>
+                    `;
+                    finalExam.questions.forEach((q, qIdx) => {
+                        html += `
+                            <div class="mb-3 pl-4 border-l-2" style="border-color: var(--primary);">
+                                <p class="text-sm font-semibold">${qIdx + 1}. ${q.q}</p>
+                                <ul class="text-sm text-gray mt-1 ml-4" style="list-style-type: disc;">
+                        `;
+                        q.options.forEach((opt, optIdx) => {
+                            const isCorrect = q.correctIdx === optIdx;
+                            html += `<li class="${isCorrect ? 'text-success font-bold' : ''}">${opt} ${isCorrect ? ' ✓ (Respuesta Correcta)' : ''}</li>`;
+                        });
+                        html += `</ul></div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                html += `</div>`;
+                container.innerHTML = html;
             },
             renderCourseDetail: function(container, courseId) {
                 const titleEl = document.getElementById("topbar-title");
