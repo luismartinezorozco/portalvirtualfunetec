@@ -617,7 +617,7 @@
 
             if (state.watermarkMode === 'full') {
                 container.className = "absolute inset-0 z-[1] pointer-events-none overflow-hidden flex items-center justify-center select-none";
-                container.innerHTML = `<img src="${srcToUse}" crossorigin="anonymous" onerror="if(this.src !== '${WATERMARK_URL_DIRECT}' && this.src !== '${LOGO_URL_FALLBACK}') { this.src='${WATERMARK_URL_DIRECT}'; } else if(this.src !== '${LOGO_URL_FALLBACK}') { this.src='${LOGO_URL_FALLBACK}'; }" alt="" style="width: 100%; height: 100%; object-fit: cover; opacity: ${opacityFraction};" />`;
+                container.innerHTML = `<img src="${srcToUse}" onerror="if(this.src !== '${WATERMARK_URL_DIRECT}' && this.src !== '${LOGO_URL_FALLBACK}') { this.src='${WATERMARK_URL_DIRECT}'; } else if(this.src !== '${LOGO_URL_FALLBACK}') { this.src='${LOGO_URL_FALLBACK}'; }" alt="" style="width: 100%; height: 100%; object-fit: cover; opacity: ${opacityFraction};" />`;
             } else {
                 container.className = "absolute inset-0 z-[1] pointer-events-none overflow-hidden flex flex-col justify-between py-6 px-6 select-none";
                 let rowsHtml = '';
@@ -626,7 +626,7 @@
                     for (let c = 0; c < 7; c++) {
                         colsHtml += `
                             <div class="flex items-center justify-center">
-                                <img src="${srcToUse}" crossorigin="anonymous" onerror="if(this.src !== '${WATERMARK_URL_DIRECT}' && this.src !== '${LOGO_URL_FALLBACK}') { this.src='${WATERMARK_URL_DIRECT}'; } else if(this.src !== '${LOGO_URL_FALLBACK}') { this.src='${LOGO_URL_FALLBACK}'; }" alt="" style="width: 75px; height: auto; max-height: 75px; object-fit: contain; opacity: ${opacityFraction};" />
+                                <img src="${srcToUse}" onerror="if(this.src !== '${WATERMARK_URL_DIRECT}' && this.src !== '${LOGO_URL_FALLBACK}') { this.src='${WATERMARK_URL_DIRECT}'; } else if(this.src !== '${LOGO_URL_FALLBACK}') { this.src='${LOGO_URL_FALLBACK}'; }" alt="" style="width: 75px; height: auto; max-height: 75px; object-fit: contain; opacity: ${opacityFraction};" />
                             </div>
                         `;
                     }
@@ -769,6 +769,8 @@
                     address: state.address || '',
                     phone: state.phone || '',
                     website: state.website || '',
+                    watermarkMode: state.watermarkMode || 'grid',
+                    watermarkOpacity: Number(state.watermarkOpacity ?? 10),
                     expYear: isIndefinite ? 9999 : expYear,
                     isIndefinite: isIndefinite,
                     dateAdded: dateAdded
@@ -955,8 +957,11 @@
             if (record.address !== undefined && record.address !== '') state.address = record.address;
             if (record.phone !== undefined && record.phone !== '') state.phone = record.phone;
             if (record.website !== undefined) state.website = record.website;
+            if (record.watermarkMode !== undefined) state.watermarkMode = record.watermarkMode;
+            if (record.watermarkOpacity !== undefined) state.watermarkOpacity = record.watermarkOpacity;
 
             window.renderQRBox();
+            window.renderWatermark();
             updateDisplay();
             
             document.getElementById('sidebar').scrollTo({ top: 0, behavior: 'smooth' });
