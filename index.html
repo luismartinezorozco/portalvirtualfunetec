@@ -992,6 +992,8 @@
         };
 
         // --- LÓGICA DE VERIFICACIÓN (FIREBASE) ---
+        window.verifiedCertificates = [];
+
         document.getElementById('verifyForm').addEventListener('submit', async e => {
             e.preventDefault();
             const idToSearch = document.getElementById('verifyIdInput').value.trim();
@@ -1007,36 +1009,42 @@
                 if(!querySnapshot.empty) {
                     let results = [];
                     querySnapshot.forEach((doc) => results.push(doc.data()));
+                    window.verifiedCertificates = results;
 
                     let html = `
                         <div class="mb-4">
                             <h3 class="text-lg font-bold text-gray-900 leading-tight">${results[0].name}</h3>
                             <p class="text-xs font-semibold text-gray-500 mt-1">C.C. ${results[0].id}</p>
                         </div>
-                        <div class="space-y-3">
+                        <div class="space-y-3 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
                     `;
                     
                     const currentYear = new Date().getFullYear();
                     
-                    results.forEach(cert => {
+                    results.forEach((cert, index) => {
                         let isActive = cert.isIndefinite || currentYear <= cert.expYear;
                         let badge = isActive ? 
                             `<span class="bg-green-100 text-green-800 border border-green-200 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">Activo</span>` : 
                             `<span class="bg-red-100 text-red-800 border border-red-200 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">Vencido</span>`;
                         
                         html += `
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                <p class="text-xs font-bold text-gray-800 mb-2 leading-tight">${cert.course}</p>
+                            <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200 space-y-2.5">
+                                <p class="text-xs font-bold text-gray-800 leading-tight">${cert.course}</p>
                                 <div class="flex items-center justify-between">
                                     <span class="text-[10px] text-gray-500">Válido hasta: ${cert.isIndefinite ? 'Sin caducidad' : cert.expYear}</span>
                                     ${badge}
                                 </div>
+                                <button type="button" onclick="downloadVerifiedPDF(${index})" class="w-full mt-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-xs transition-colors shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    Descargar Certificado PDF
+                                </button>
                             </div>
                         `;
                     });
                     html += `</div>`;
                     container.innerHTML = html;
                 } else {
+                    window.verifiedCertificates = [];
                     container.innerHTML = `
                         <div class="bg-red-50 p-4 rounded-lg border border-red-100 text-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-red-400 mb-2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -1050,6 +1058,93 @@
                 container.innerHTML = `<p class="text-center text-red-500 text-sm py-4">Error de conexión con la base de datos.</p>`;
             }
         });
+
+        window.downloadVerifiedPDF = async function(index) {
+            const record = window.verifiedCertificates[index];
+            if (!record) return;
+
+            const overlay = document.getElementById('loadingOverlay');
+            const loadText = document.getElementById('loadingText');
+            loadText.textContent = "Preparando y descargando tu certificado en PDF...";
+            overlay.classList.remove('hidden');
+
+            const mainAppEl = document.getElementById('mainApp');
+            const wasMainAppHidden = mainAppEl.classList.contains('hidden');
+
+            try {
+                // Cargar primero la configuración predeterminada de firmas/contacto como respaldo
+                await window.loadSignatureConfig();
+
+                // Aplicar todos los datos específicos guardados en el certificado del estudiante
+                state.name = record.name ?? '';
+                state.id = record.id ?? '';
+                state.course = record.course ?? '';
+                if (record.hours !== undefined && record.hours !== '') state.hours = record.hours;
+                if (record.day !== undefined && record.day !== '') state.day = record.day;
+                if (record.month !== undefined && record.month !== '') state.month = record.month;
+                if (record.year !== undefined && record.year !== '') state.year = record.year;
+                if (record.validityType !== undefined && record.validityType !== '') state.validityType = record.validityType;
+                if (record.validityYears !== undefined && record.validityYears !== '') state.validityYears = record.validityYears;
+
+                state.qrImage = record.qrImage || '';
+                state.qrSize = record.qrSize !== undefined ? record.qrSize : 100;
+                state.qrX = record.qrX !== undefined ? record.qrX : 0;
+                state.qrY = record.qrY !== undefined ? record.qrY : 0;
+
+                if (record.sign1Name !== undefined && record.sign1Name !== '') state.sign1Name = record.sign1Name;
+                if (record.sign1Role !== undefined && record.sign1Role !== '') state.sign1Role = record.sign1Role;
+                if (record.sign1Size !== undefined) state.sign1Size = record.sign1Size;
+                if (record.sign1X !== undefined) state.sign1X = record.sign1X;
+                if (record.sign1Y !== undefined) state.sign1Y = record.sign1Y;
+                if (record.sign1Image) {
+                    state.sign1Image = record.sign1Image;
+                    document.getElementById('sign1ImageContainer').innerHTML = `<img src="${state.sign1Image}" alt="Firma" class="max-w-full h-full object-contain object-bottom mb-0 relative z-10" />`;
+                }
+
+                if (record.sign2Name !== undefined && record.sign2Name !== '') state.sign2Name = record.sign2Name;
+                if (record.sign2Role !== undefined && record.sign2Role !== '') state.sign2Role = record.sign2Role;
+                if (record.sign2Size !== undefined) state.sign2Size = record.sign2Size;
+                if (record.sign2X !== undefined) state.sign2X = record.sign2X;
+                if (record.sign2Y !== undefined) state.sign2Y = record.sign2Y;
+                if (record.sign2Image) {
+                    state.sign2Image = record.sign2Image;
+                    document.getElementById('sign2ImageContainer').innerHTML = `<img src="${state.sign2Image}" alt="Firma" class="max-w-full h-full object-contain object-bottom mb-0 relative z-10" />`;
+                }
+
+                if (record.email !== undefined && record.email !== '') state.email = record.email;
+                if (record.address !== undefined && record.address !== '') state.address = record.address;
+                if (record.phone !== undefined && record.phone !== '') state.phone = record.phone;
+                if (record.website !== undefined) state.website = record.website;
+                if (record.watermarkMode !== undefined) state.watermarkMode = record.watermarkMode;
+                if (record.watermarkOpacity !== undefined) state.watermarkOpacity = record.watermarkOpacity;
+
+                window.renderQRBox();
+                window.renderWatermark();
+                updateDisplay();
+
+                // Habilitar temporalmente el lienzo detrás de la pantalla de verificación para renderizar con precisión
+                if (wasMainAppHidden) {
+                    mainAppEl.classList.remove('hidden');
+                    mainAppEl.classList.add('flex');
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 120));
+
+                const pdf = await createCertificatePDF();
+                const safeName = String(state.name || 'ESTUDIANTE').replace(/[^a-z0-9]/gi, '_').toUpperCase();
+                const safeCourse = String(state.course || 'CURSO').replace(/[^a-z0-9]/gi, '_').toUpperCase();
+                pdf.save(`CERTIFICADO_${safeName}_${safeCourse}.pdf`);
+            } catch (error) {
+                console.error("Error descargando certificado verificado:", error);
+                await window.showNotice("Hubo un error al generar la descarga del certificado.");
+            } finally {
+                if (wasMainAppHidden) {
+                    mainAppEl.classList.add('hidden');
+                    mainAppEl.classList.remove('flex');
+                }
+                overlay.classList.add('hidden');
+            }
+        };
 
         // --- LÓGICA DE LOGIN (INTERFAZ) ---
         document.getElementById('loginForm').addEventListener('submit', e => {
@@ -1217,14 +1312,15 @@
             scaleWrapper.style.transform = 'none';
             window.renderQRBox();
 
-            const qrImgEl = document.getElementById('qrActiveImg');
-            if (qrImgEl && !qrImgEl.complete) {
-                await new Promise(resolve => {
-                    qrImgEl.onload = resolve;
-                    qrImgEl.onerror = resolve;
+            const allImages = docContainer.querySelectorAll('img');
+            await Promise.all(Array.from(allImages).map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
                 });
-            }
-            await new Promise(resolve => setTimeout(resolve, 60));
+            }));
+            await new Promise(resolve => setTimeout(resolve, 80));
 
             try {
                 const canvas = await window.html2canvas(docContainer, {
