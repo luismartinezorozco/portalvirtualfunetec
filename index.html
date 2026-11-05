@@ -295,7 +295,7 @@
                     <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
                         Ingresar a la Plataforma
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 2.2</p>
+                    <p class="text-center text-xs text-gray mt-4">Versión 2.3</p>
                 </form>
             </div>
         </div>
@@ -1594,6 +1594,27 @@
                 html += `</div>`;
                 container.innerHTML = html;
             },
+            moveContent: function(courseId, contentId, direction) {
+                let contents = window.DB.get("contents").filter((c) => String(c.courseId) === String(courseId));
+                contents.forEach((c, index) => { if (typeof c.order !== 'number') c.order = index; });
+                contents.sort((a, b) => a.order - b.order);
+
+                const currentIndex = contents.findIndex((c) => String(c.id) === String(contentId));
+                if (currentIndex === -1) return;
+
+                const targetIndex = currentIndex + direction;
+                if (targetIndex < 0 || targetIndex >= contents.length) return;
+
+                const temp = contents[currentIndex];
+                contents[currentIndex] = contents[targetIndex];
+                contents[targetIndex] = temp;
+
+                contents.forEach((c, idx) => {
+                    window.DB.update("contents", c.id, { order: idx });
+                });
+
+                window.Router.navigate("admin-course-detail", { id: courseId });
+            },
             renderCourseDetail: function(container, courseId) {
                 const titleEl = document.getElementById("topbar-title");
                 if (titleEl) titleEl.textContent = "Gestionar Contenido";
@@ -1904,16 +1925,115 @@
                     f2r: "Coordinadora Académica",
                     ft1: "funetec2022@gmail.com",
                     ft2: "calle 47#18_24 Barranquilla",
-                    ft3: "3046781679"
+                    ft3: "3046781679",
+                    web: "Para Validación del titulo ingresar a: www.funetec.com.co",
+                    logoimg: "https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg",
+                    bgimg: "https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg",
+                    wmGrid: "7x6",
+                    wmCols: 7,
+                    wmRows: 6,
+                    wmOpacity: 12,
+                    qrimg: "",
+                    qrSize: 32,
+                    qrX: 242,
+                    qrY: 14
                 };
                 
-                const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
+                const val = (key) => cfg[key] !== undefined && cfg[key] !== "" ? cfg[key] : defs[key];
+                const currentGrid = val('wmGrid');
                 
                 window.UI.showModal(`
                     <h3 class="mb-4">Configurar Diseño del Certificado</h3>
                     <form id="cert-config-form" onsubmit="event.preventDefault(); window.AdminViews.saveCertConfig(this, '${cfg.id || ''}')">
-                        <div style="max-height: 60vh; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="max-height: 65vh; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 1rem;">
                             
+                            <div class="p-4 rounded border" style="background: #fff5f5; border-color: #fecaca;">
+                                <label class="text-xs text-primary font-bold">IMAGEN DEL DIPLOMA (LOGO PRINCIPAL)</label>
+                                <div class="form-group mb-0 mt-2">
+                                    <input type="file" name="logofile" class="form-control mb-2" accept="image/png, image/jpeg">
+                                    <input type="hidden" name="logoimg" value="${val('logoimg') || ''}">
+                                    ${val('logoimg') ? `<img src="${val('logoimg')}" style="height:45px; object-fit:contain; background:#fff; padding:4px; border-radius:6px; border:1px solid var(--border);">` : ''}
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded border" style="background: #fff5f5; border-color: #fecaca;">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-xs text-primary font-bold">CÓDIGO QR (SUPERIOR DERECHA)</label>
+                                    ${cfg.qrimg ? `<span class="text-xs text-danger cursor-pointer font-semibold" onclick="this.closest('form').elements.qrimg.value=''; document.getElementById('qr-preview-box').style.display='none';">Quitar QR</span>` : ''}
+                                </div>
+                                <input type="file" name="qrfile" class="form-control mb-2" accept="image/png, image/jpeg">
+                                <input type="hidden" name="qrimg" value="${cfg.qrimg || ''}">
+                                <div id="qr-preview-box" style="${cfg.qrimg ? 'display:block;' : 'display:none;'}" class="mb-2">
+                                    <img src="${cfg.qrimg || ''}" style="height:45px; object-fit:contain; background:#fff; padding:4px; border-radius:6px; border:1px solid var(--border);">
+                                </div>
+                                <div class="mt-2">
+                                    <div class="flex justify-between text-xs text-gray font-semibold mb-1">
+                                        <span>TAMAÑO (%)</span>
+                                        <span id="qr-size-lbl">${val('qrSize')} mm</span>
+                                    </div>
+                                    <input type="range" name="qrSize" min="15" max="55" value="${val('qrSize')}" class="w-full" style="accent-color: var(--primary);" oninput="document.getElementById('qr-size-lbl').textContent = this.value + ' mm'">
+                                </div>
+                                <div class="flex gap-3 mt-2">
+                                    <div class="flex-1">
+                                        <div class="flex justify-between text-xs text-gray font-semibold mb-1">
+                                            <span>MOVER ↔ (X)</span>
+                                            <span id="qr-x-lbl">${val('qrX')}</span>
+                                        </div>
+                                        <input type="range" name="qrX" min="180" max="270" value="${val('qrX')}" class="w-full" style="accent-color: var(--primary);" oninput="document.getElementById('qr-x-lbl').textContent = this.value">
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between text-xs text-gray font-semibold mb-1">
+                                            <span>MOVER ↕ (Y)</span>
+                                            <span id="qr-y-lbl">${val('qrY')}</span>
+                                        </div>
+                                        <input type="range" name="qrY" min="5" max="60" value="${val('qrY')}" class="w-full" style="accent-color: var(--primary);" oninput="document.getElementById('qr-y-lbl').textContent = this.value">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded border" style="background: var(--bg); border-color: var(--border);">
+                                <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
+                                    <label class="text-xs font-bold text-text" style="text-transform: uppercase;">MARCA DE AGUA (FONDO PDF <span id="wm-grid-title">${currentGrid.toUpperCase()}</span>)</label>
+                                    <select name="wmGrid" class="form-control" style="width: auto; min-height: 36px; padding: 4px 12px; font-size: 0.85rem;" onchange="document.getElementById('wm-grid-title').textContent = this.value.toUpperCase(); document.getElementById('wm-custom-dims').style.display = this.value === 'custom' ? 'flex' : 'none';">
+                                        <option value="7x6" ${currentGrid === '7x6' ? 'selected' : ''}>Cuadrícula 7x6 (Todo el PDF)</option>
+                                        <option value="6x5" ${currentGrid === '6x5' ? 'selected' : ''}>Cuadrícula 6x5 (Todo el PDF)</option>
+                                        <option value="5x4" ${currentGrid === '5x4' ? 'selected' : ''}>Cuadrícula 5x4 (Todo el PDF)</option>
+                                        <option value="4x3" ${currentGrid === '4x3' ? 'selected' : ''}>Cuadrícula 4x3 (Todo el PDF)</option>
+                                        <option value="1x1" ${currentGrid === '1x1' ? 'selected' : ''}>Imagen Única Centrada (1x1)</option>
+                                        <option value="full" ${currentGrid === 'full' ? 'selected' : ''}>Hoja Completa Estirada</option>
+                                        <option value="custom" ${currentGrid === 'custom' ? 'selected' : ''}>Personalizado (Columnas x Filas)</option>
+                                        <option value="none" ${currentGrid === 'none' ? 'selected' : ''}>Sin Marca de Agua</option>
+                                    </select>
+                                </div>
+
+                                <div id="wm-custom-dims" class="gap-2 mb-3 mt-2" style="display: ${currentGrid === 'custom' ? 'flex' : 'none'};">
+                                    <div class="flex-1">
+                                        <label class="text-xs text-gray">Columnas (Horizontal)</label>
+                                        <input type="number" name="wmCols" class="form-control" min="1" max="15" value="${val('wmCols')}">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="text-xs text-gray">Filas (Vertical)</label>
+                                        <input type="number" name="wmRows" class="form-control" min="1" max="15" value="${val('wmRows')}">
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-white rounded border mb-3" style="border-color: var(--border);">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-bold text-gray">INTENSIDAD / VISIBILIDAD</span>
+                                        <span id="wm-opacity-val" class="text-xs font-bold text-primary">${val('wmOpacity')}%</span>
+                                    </div>
+                                    <input type="range" name="wmOpacity" min="1" max="100" value="${val('wmOpacity')}" class="w-full" style="accent-color: var(--primary); cursor: pointer;" oninput="document.getElementById('wm-opacity-val').textContent = this.value + '%'">
+                                </div>
+
+                                <label class="text-xs text-gray block mb-1">Subir Imagen de Marca de Agua (Por defecto usa el Logo FUNETEC)</label>
+                                <input type="file" name="bgfile" class="form-control mb-2" accept="image/png, image/jpeg">
+                                <input type="hidden" name="bgimg" value="${val('bgimg') || ''}">
+                                <div class="flex items-center justify-between gap-2">
+                                    ${val('bgimg') ? `<img src="${val('bgimg')}" id="wm-img-preview" style="height:40px; object-fit:contain; background:#fff; padding:4px; border-radius:6px; border:1px solid var(--border);">` : ''}
+                                    <button type="button" class="btn btn-outline btn-sm text-xs" onclick="this.closest('form').elements.bgimg.value = this.closest('form').elements.logoimg.value || '${defs.logoimg}'; const p = document.getElementById('wm-img-preview'); if(p) p.src = this.closest('form').elements.bgimg.value;">Usar Logo Principal</button>
+                                </div>
+                            </div>
+
                             <div>
                                 <label class="text-xs text-primary font-bold">ENCABEZADOS</label>
                                 <input type="text" name="h1" class="form-control mb-2" value="${val('h1')}" placeholder="Línea 1">
@@ -1957,12 +2077,13 @@
                             </div>
                             
                             <div>
-                                <label class="text-xs text-primary font-bold">PIE DE PÁGINA (CONTACTO)</label>
-                                <div class="flex gap-2 flex-wrap">
+                                <label class="text-xs text-primary font-bold">PIE DE PÁGINA (CONTACTO Y SITIO WEB)</label>
+                                <div class="flex gap-2 flex-wrap mb-2">
                                     <input type="text" name="ft1" class="form-control flex-1 min-w-[150px]" value="${val('ft1')}" placeholder="Email">
                                     <input type="text" name="ft2" class="form-control flex-1 min-w-[150px]" value="${val('ft2')}" placeholder="Dirección">
                                     <input type="text" name="ft3" class="form-control flex-1 min-w-[150px]" value="${val('ft3')}" placeholder="Teléfono">
                                 </div>
+                                <input type="text" name="web" class="form-control" value="${val('web')}" placeholder="Ej: Para Validación del titulo ingresar a: www.funetec.com.co">
                             </div>
                         </div>
                         <div class="flex justify-between mt-4 pt-4 border-t flex-wrap gap-2">
@@ -1986,9 +2107,15 @@
                 try {
                     let f1url = formEl.elements.f1img.value;
                     let f2url = formEl.elements.f2img.value;
+                    let logourl = formEl.elements.logoimg.value;
+                    let bgurl = formEl.elements.bgimg.value;
+                    let qrurl = formEl.elements.qrimg.value;
                     
                     if(formEl.elements.f1file.files[0]) f1url = await uploadImg(formEl.elements.f1file.files[0]);
                     if(formEl.elements.f2file.files[0]) f2url = await uploadImg(formEl.elements.f2file.files[0]);
+                    if(formEl.elements.logofile.files[0]) logourl = await uploadImg(formEl.elements.logofile.files[0]);
+                    if(formEl.elements.bgfile.files[0]) bgurl = await uploadImg(formEl.elements.bgfile.files[0]);
+                    if(formEl.elements.qrfile.files[0]) qrurl = await uploadImg(formEl.elements.qrfile.files[0]);
 
                     const data = {
                         h1: formEl.elements.h1.value, h2: formEl.elements.h2.value,
@@ -1997,7 +2124,16 @@
                         duracion: formEl.elements.duracion.value, vigencia: formEl.elements.vigencia.value,
                         f1n: formEl.elements.f1n.value, f1r: formEl.elements.f1r.value, f1img: f1url,
                         f2n: formEl.elements.f2n.value, f2r: formEl.elements.f2r.value, f2img: f2url,
-                        ft1: formEl.elements.ft1.value, ft2: formEl.elements.ft2.value, ft3: formEl.elements.ft3.value
+                        ft1: formEl.elements.ft1.value, ft2: formEl.elements.ft2.value, ft3: formEl.elements.ft3.value,
+                        web: formEl.elements.web.value,
+                        logoimg: logourl, bgimg: bgurl, qrimg: qrurl,
+                        wmGrid: formEl.elements.wmGrid.value,
+                        wmCols: parseInt(formEl.elements.wmCols.value) || 7,
+                        wmRows: parseInt(formEl.elements.wmRows.value) || 6,
+                        wmOpacity: parseInt(formEl.elements.wmOpacity.value) || 12,
+                        qrSize: parseInt(formEl.elements.qrSize.value) || 32,
+                        qrX: parseInt(formEl.elements.qrX.value) || 242,
+                        qrY: parseInt(formEl.elements.qrY.value) || 14
                     };
                     
                     if (cfgId) window.DB.update("cert_config", cfgId, data);
@@ -2556,76 +2692,125 @@
                 `;
             },
             startWorkshop: function(courseId, contentId) {
-                const exam = window.DB.get("exams").find((e) => String(e.contentId) === String(contentId));
+                const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId) && String(e.contentId) === String(contentId));
                 if (!exam || !exam.questions || exam.questions.length === 0) {
                     return window.UI.showAlert("Este taller aún no tiene preguntas configuradas por el docente.");
                 }
-                
-                let shuffledQuestions = exam.questions.map((q, qIndex) => {
+
+                let shuffledQuestions = exam.questions.map((q) => {
                     let options = q.options.map((text, oIndex) => ({ text, isCorrect: oIndex === q.correctIdx }));
                     window.shuffleArray(options);
                     let newCorrectIdx = options.findIndex((o) => o.isCorrect);
-                    return { q: q.q, options: options.map((o) => o.text), correctIdx: newCorrectIdx };
+                    return {
+                        q: q.q,
+                        options: options.map((o) => o.text),
+                        correctIdx: newCorrectIdx
+                    };
                 });
-                
                 window.shuffleArray(shuffledQuestions);
-                window.tempWorkshopExam = { passScore: exam.passScore || 60, questions: shuffledQuestions, contentId: contentId, courseId: courseId };
-                
-                let html = `
-                    <div class="text-left w-full">
-                        <h3 class="mb-4">Desarrollo del Taller</h3>
-                        <p class="text-gray mb-4 border-b pb-4">Puntaje mínimo requerido para aprobar: <strong>${window.tempWorkshopExam.passScore}%</strong></p>
-                        <form id="workshop-form" onsubmit="event.preventDefault(); window.StudentViews.submitWorkshop()">
-                            ${window.tempWorkshopExam.questions.map((q, idx) => `
-                                <div class="mb-6 p-4 bg-bg rounded">
-                                    <h4 class="mb-3 text-text">${idx + 1}. ${q.q}</h4>
+                window.tempWorkshop = { passScore: exam.passScore || 60, questions: shuffledQuestions };
+
+                const container = document.getElementById(`taller-container-${contentId}`);
+                if (!container) return;
+
+                container.innerHTML = `
+                    <div class="w-full text-left">
+                        <h3 class="mb-2 text-center font-bold">Resolviendo Taller</h3>
+                        <p class="text-gray text-sm text-center mb-4 border-b pb-3">Puntaje mínimo requerido: <strong>${window.tempWorkshop.passScore}%</strong></p>
+                        <form id="workshop-form" onsubmit="event.preventDefault(); window.StudentViews.submitWorkshop('${courseId}', '${contentId}')">
+                            ${window.tempWorkshop.questions.map((q, idx) => `
+                                <div class="mb-4 p-4 bg-bg rounded">
+                                    <h4 class="mb-2 text-text">${idx + 1}. ${q.q}</h4>
                                     ${q.options.map((opt, oIdx) => `
-                                        <div class="mb-2 flex items-center gap-2 cursor-pointer text-gray">
+                                        <label class="mb-2 flex items-center gap-2 cursor-pointer text-gray">
                                             <input type="radio" name="wq_${idx}" value="${oIdx}" required style="transform: scale(1.2);">
-                                            <span style="word-break:break-word;">${opt}</span>
-                                        </div>
+                                            <span>${opt}</span>
+                                        </label>
                                     `).join("")}
                                 </div>
                             `).join("")}
-                            <button type="submit" class="btn btn-primary btn-lg w-full mt-4" id="submit-workshop-btn">Enviar Respuestas</button>
+                            <button type="submit" class="btn btn-primary btn-lg w-full mt-2">Calificar Taller</button>
                         </form>
                     </div>
                 `;
-                
-                const container = document.getElementById(`taller-container-${contentId}`);
-                if (container) {
-                    container.innerHTML = html;
-                    container.classList.remove('items-center', 'justify-center', 'text-center');
-                    container.classList.add('items-start');
-                }
             },
-            submitWorkshop: function() {
-                const submitBtn = document.getElementById("submit-workshop-btn");
-                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Evaluando..."; }
-                
+            submitWorkshop: function(courseId, contentId) {
                 const formEl = document.getElementById("workshop-form");
+                if (!formEl || !window.tempWorkshop) return;
+
                 let correctCount = 0;
-                
-                window.tempWorkshopExam.questions.forEach((q, idx) => {
-                    const selectedInput = formEl.elements[`wq_${idx}`];
-                    const val = selectedInput ? selectedInput.value : null;
-                    if (val !== null && parseInt(val) === q.correctIdx) {
+                window.tempWorkshop.questions.forEach((q, idx) => {
+                    const selected = formEl.elements[`wq_${idx}`]?.value;
+                    if (selected !== undefined && parseInt(selected) === q.correctIdx) {
                         correctCount++;
                     }
                 });
-                
-                const percentage = window.tempWorkshopExam.questions.length > 0 
-                    ? Math.round((correctCount / window.tempWorkshopExam.questions.length) * 100)
-                    : 0;
-                const passed = percentage >= window.tempWorkshopExam.passScore;
-                
-                if (passed) {
-                    window.UI.showAlert(`¡Excelente! Has aprobado el taller con <b>${percentage}%</b>. Tu avance ha sido guardado automáticamente.`);
-                    window.StudentViews.markCompleted(window.tempWorkshopExam.courseId, window.tempWorkshopExam.contentId);
+
+                const score = Math.round((correctCount / window.tempWorkshop.questions.length) * 100);
+                if (score >= window.tempWorkshop.passScore) {
+                    window.UI.showAlert(`¡Felicidades! Aprobaste el taller con ${score}%. El módulo ha sido completado.`);
+                    window.StudentViews.markCompleted(courseId, contentId);
                 } else {
-                    window.UI.showAlert(`Obtuviste <b>${percentage}%</b>. Necesitas al menos ${window.tempWorkshopExam.passScore}% para aprobar este taller. Por favor, repasa e intenta de nuevo.`);
-                    window.Router.navigate("student-course", { id: window.tempWorkshopExam.courseId });
+                    window.UI.showAlert(`Obtuviste ${score}%. Necesitas al menos ${window.tempWorkshop.passScore}% para aprobar este taller. Inténtalo de nuevo.`);
+                    window.StudentViews.startWorkshop(courseId, contentId);
                 }
+            },
+            changeContent: function(courseId, contentId, event) {
+                const content = window.DB.get("contents")
+                    .filter((c) => String(c.courseId) === String(courseId))
+                    .find((c) => String(c.id) === String(contentId));
+                    
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                    
+                const playerArea = document.getElementById("player-area");
+                if (playerArea && content) {
+                    playerArea.innerHTML = window.StudentViews.generatePlayerHtml(content, courseId, progress);
+                }
+                
+                document.querySelectorAll(".content-item").forEach((el) => el.classList.remove("active"));
+                if (event && event.currentTarget) {
+                    event.currentTarget.classList.add("active");
+                }
+                
+                const btnArea = document.getElementById("btn-container-area");
+                if (btnArea) {
+                    const completedIds = progress?.completedContentIds || [];
+                    if (completedIds.includes(String(contentId))) {
+                        btnArea.innerHTML = "";
+                    } else if (content && content.type !== 'taller') {
+                        btnArea.innerHTML = `
+                            <div class="action-grid cols-1 m-0 p-0 border-none">
+                                <button class="btn-card success" onclick="window.StudentViews.markCompleted('${courseId}', '${contentId}')">
+                                    <span>Marcar módulo como completado</span>
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        btnArea.innerHTML = "";
+                    }
+                }
+            },
+            markCompleted: function(courseId, contentId) {
+                const studentId = String(window.State.currentUser.id);
+                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                
+                const completedIds = progress?.completedContentIds || [];
+                if (progress && !completedIds.includes(String(contentId))) {
+                    const newIds = [...completedIds, String(contentId)];
+                    window.DB.update("progress", progress.id, { 
+                        completedContentIds: newIds, 
+                        estadoExamen: "pendiente" 
+                    });
+                }
+                
+                window.Router.navigate("student-course", { id: courseId });
+                
+                // Deslizar automáticamente hacia arriba al avanzar de módulo
+                setTimeout(() => {
+                    const mainContent = document.querySelector(".content-area");
+                    if(mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 50);
             },
             renderExam: function(container, courseId) {
                 const exam = window.DB.get("exams").find((e) => String(e.courseId) === String(courseId) && !e.contentId);
@@ -2772,120 +2957,145 @@
                 window.UI.showModal(modalHtml);
             },
             renderCerts: function(container) {
-                let certs = window.DB.get("certificates");
-                
-                // Si es docente, solo ve certificados de sus alumnos
-                if (window.State.currentUser.role === "docente") {
-                    const myCourseIds = window.DB.get("enrollments")
-                        .filter(e => String(e.studentId) === String(window.State.currentUser.id))
-                        .map(e => String(e.courseId));
-                    certs = certs.filter(c => myCourseIds.includes(String(c.courseId)));
-                }
-                
                 const studentId = String(window.State.currentUser.id);
-                if (window.State.currentUser.role !== "admin" && window.State.currentUser.role !== "docente") {
-                    certs = certs.filter((c) => String(c.studentId) === studentId);
-                }
-
-                const users = window.DB.get("users");
+                const certs = window.DB.get("certificates").filter((c) => String(c.studentId) === studentId);
                 const courses = window.DB.get("courses");
                 
                 let html = `
-                    <div class="flex justify-between items-center flex-wrap gap-4 mb-4 mobile-stack">
-                        <h3 class="m-0">Mis Certificados</h3>
-                    </div>
-                    <div class="course-grid">
+                    <h3 class="mb-4">Mis Certificados</h3>
+                    <div class="card table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Curso</th><th>Calificación</th><th>Estado</th><th>Acción</th></tr>
+                            </thead>
+                            <tbody>
                 `;
                 
                 if (certs.length === 0) {
-                    html += '<p class="text-gray">No tienes certificados aún. Completa un curso y aprueba el examen.</p>';
+                    html += '<tr><td colspan="4" class="text-center text-gray">Aún no tienes certificados registrados.</td></tr>';
                 }
                 
                 certs.forEach((cert) => {
                     const course = courses.find((c) => String(c.id) === String(cert.courseId));
                     if (course) {
-                        const topColor = cert.status === "approved" ? "var(--success)" : cert.status === "rejected" ? "var(--danger)" : "var(--warning)";
-                        const cName = course.name || "Curso no especificado";
-
+                        const badgeClass = cert.status === "pending" ? "badge-warning" : cert.status === "approved" ? "badge-success" : "badge-danger";
+                        const statusText = cert.status === "pending" ? "En revisión" : cert.status === "approved" ? "Aprobado" : "Rechazado";
+                        const safeCourseName = (course.name || "Curso").replace(/'/g, "\\'");
+                        const safeStudentName = (window.State.currentUser.name || "Estudiante").replace(/'/g, "\\'");
+                        
                         html += `
-                            <div class="card text-center flex-col justify-between" style="border-top: 4px solid ${topColor};">
-                                <div>
-                                    <h4 class="mb-2 text-text">${cName}</h4>
-                                    <p class="text-sm text-gray mb-2">Puntaje obtenido: ${cert.score}%</p>
-                                </div>
-                        `;
-                        
-                        if (cert.status === "pending") {
-                            html += `
-                                <div>
-                                    <span class="badge badge-warning mb-4 inline-block">En Revisión</span>
-                                    <p class="text-xs text-gray">Esperando aprobación del administrador.</p>
-                                </div>
-                            `;
-                        } else if (cert.status === "rejected") {
-                            html += `
-                                <div>
-                                    <span class="badge badge-danger mb-4 inline-block">Rechazado</span>
-                                    <p class="text-xs text-gray">Comunícate con soporte.</p>
-                                </div>
-                            `;
-                        } else {
-                            html += `
-                                <div>
-                                    <span class="badge badge-success mb-4 inline-block">Aprobado</span>
-                                    <div class="action-grid cols-1 m-0 p-0 border-none">
-                                        <button class="btn-card primary" onclick="window.StudentViews.viewDiploma('${cName.replace(/'/g, "\\\\'")}', '${window.State.currentUser.name.replace(/'/g, "\\\\'")}', '${cert.id}')">
-                                            <span>Ver Diploma</span>
+                            <tr>
+                                <td><strong>${course.name}</strong></td>
+                                <td>${cert.score}%</td>
+                                <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                                <td>
+                                    ${cert.status === "approved" ? `
+                                        <button class="btn btn-primary btn-sm" onclick="window.StudentViews.viewDiploma('${safeCourseName}', '${safeStudentName}', '${cert.id}')">
+                                            Descargar Certificado
                                         </button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                        
-                        html += `</div>`;
+                                    ` : '<span class="text-xs text-gray">No disponible</span>'}
+                                </td>
+                            </tr>
+                        `;
                     }
                 });
                 
-                html += `</div>`;
+                html += `</tbody></table></div>`;
                 container.innerHTML = html;
             },
             viewDiploma: function(courseName, studentName, certId) {
-                window.UI.showAlert("Generando certificado en PDF, por favor espera...");
-                
-                try {
-                    window.StudentViews.generateCertificatePDF({ courseName, studentName, certId });
-                } catch (err) {
-                    window.UI.showAlert("Error interno al procesar el certificado: " + err.message);
-                }
-            },
-            generateCertificatePDF: function(data) {
-                const { courseName, studentName, certId } = data;
-                const cert = window.DB.get("certificates").find(c => String(c.id) === String(certId)) || {};
-                const user = window.DB.get("users").find(u => String(u.id) === String(cert.studentId)) || {};
-                const courseObj = window.DB.get("courses").find(c => String(c.id) === String(cert.courseId)) || {};
-                const docId = user.document || "No registrado";
-                const cHours = courseObj.hours || 48;
-                
-                const d = cert.overrideDate ? new Date(cert.overrideDate + "T00:00:00") : new Date();
-                const dStr = `Dado en Barranquilla, a los ${d.getDate()} de ${["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][d.getMonth()]} de ${d.getFullYear()}`;
-                
-                const fName = (cert.overrideName || studentName).toUpperCase();
-                const fCourse = (cert.overrideCourse || courseName).toUpperCase();
+                window.UI.showModal(`
+                    <div class="text-center p-6">
+                        <h3 class="mb-2 font-bold text-primary">Generando Certificado PDF...</h3>
+                        <p class="text-gray text-sm">Por favor espera unos segundos mientras se prepara tu documento oficial.</p>
+                    </div>
+                `);
 
-                const loadJsPdf = () => window.jspdf ? Promise.resolve() : new Promise((res, rej) => {
-                    const s = document.createElement("script");
-                    s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-                    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+                const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
+                const student = cert ? window.DB.get("users").find((u) => String(u.id) === String(cert.studentId)) : window.State.currentUser;
+                const course = cert ? window.DB.get("courses").find((c) => String(c.id) === String(cert.courseId)) : null;
+
+                const fName = (cert?.overrideName || studentName || student?.name || "Estudiante").toUpperCase();
+                const fCourse = (cert?.overrideCourse || courseName || course?.name || "Curso").toUpperCase();
+                const docId = student?.document || "N/A";
+                const cHours = course?.hours || 48;
+
+                const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+                let dObj = new Date();
+                if (cert?.overrideDate) {
+                    const parts = cert.overrideDate.split("-");
+                    if (parts.length === 3) {
+                        dObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    }
+                }
+                const dStr = `Dado en Barranquilla a los ${dObj.getDate()} días del mes de ${months[dObj.getMonth()]} de ${dObj.getFullYear()}.`;
+
+                const loadJsPdf = () => new Promise((resolve, reject) => {
+                    if (window.jspdf && window.jspdf.jsPDF) return resolve();
+                    const script = document.createElement("script");
+                    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+                    script.onload = () => resolve();
+                    script.onerror = () => reject(new Error("No se pudo cargar la librería jsPDF"));
+                    document.head.appendChild(script);
                 });
 
-                const getB64 = (url) => new Promise(res => {
+                const getB64 = (url, removeWhiteBg = false) => new Promise(res => {
                     if(!url) return res(null);
                     const img = new Image(); img.crossOrigin = "Anonymous";
                     img.onload = () => {
                         const cvs = document.createElement("canvas"); cvs.width = img.width; cvs.height = img.height;
-                        cvs.getContext("2d").drawImage(img, 0, 0); res(cvs.toDataURL("image/png"));
+                        const ctx = cvs.getContext("2d");
+                        ctx.drawImage(img, 0, 0);
+                        if (removeWhiteBg) {
+                            try {
+                                const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+                                const d = imgData.data;
+                                for (let i = 0; i < d.length; i += 4) {
+                                    if (d[i] > 242 && d[i+1] > 242 && d[i+2] > 242) {
+                                        d[i+3] = 0;
+                                    }
+                                }
+                                ctx.putImageData(imgData, 0, 0);
+                            } catch(e) {}
+                        }
+                        res(cvs.toDataURL("image/png"));
                     };
                     img.onerror = () => res(null); img.src = url;
+                });
+
+                const getFadedWatermarkTile = (url, opacityPct) => new Promise(res => {
+                    const alpha = Math.max(0.01, Math.min(1, (Number(opacityPct) || 12) / 100));
+                    const createFallbackTile = () => {
+                        const cvs = document.createElement("canvas");
+                        cvs.width = 240; cvs.height = 200;
+                        const ctx = cvs.getContext("2d");
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(0, 0, cvs.width, cvs.height);
+                        ctx.globalAlpha = alpha;
+                        ctx.fillStyle = "#991b1b"; ctx.fillRect(45, 20, 38, 110);
+                        ctx.fillStyle = "#e11d2a"; ctx.fillRect(98, 45, 38, 85);
+                        ctx.fillStyle = "#fca5a5"; ctx.fillRect(151, 20, 38, 110);
+                        ctx.fillStyle = "#111827"; ctx.font = "900 32px Inter, Arial, sans-serif";
+                        ctx.textAlign = "center"; ctx.fillText("FUNETEC", 120, 172);
+                        return cvs.toDataURL("image/jpeg", 0.92);
+                    };
+                    if (!url) return res(createFallbackTile());
+                    const img = new Image(); img.crossOrigin = "Anonymous";
+                    img.onload = () => {
+                        const cvs = document.createElement("canvas");
+                        cvs.width = 300; cvs.height = 300;
+                        const ctx = cvs.getContext("2d");
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(0, 0, cvs.width, cvs.height);
+                        ctx.globalAlpha = alpha;
+                        const ratio = Math.min(260 / img.width, 260 / img.height);
+                        const w = img.width * ratio;
+                        const h = img.height * ratio;
+                        ctx.drawImage(img, (300 - w) / 2, (300 - h) / 2, w, h);
+                        res(cvs.toDataURL("image/jpeg", 0.92));
+                    };
+                    img.onerror = () => res(createFallbackTile());
+                    img.src = url;
                 });
 
                 const cfg = window.DB.get("cert_config")[0] || {};
@@ -2904,96 +3114,160 @@
                     f2r: "Coordinadora Académica",
                     ft1: "funetec2022@gmail.com",
                     ft2: "calle 47#18_24 Barranquilla",
-                    ft3: "3046781679"
+                    ft3: "3046781679",
+                    web: "Para Validación del titulo ingresar a: www.funetec.com.co",
+                    logoimg: "https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg",
+                    bgimg: "https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg",
+                    wmGrid: "7x6",
+                    wmCols: 7,
+                    wmRows: 6,
+                    wmOpacity: 12,
+                    qrimg: "",
+                    qrSize: 32,
+                    qrX: 242,
+                    qrY: 14
                 };
                 
-                const val = (key) => cfg[key] !== undefined ? cfg[key] : defs[key];
+                const val = (key) => cfg[key] !== undefined && cfg[key] !== "" ? cfg[key] : defs[key];
+                const wmGridMode = val('wmGrid');
+                const wmOpacityVal = val('wmOpacity');
+                const wmSourceUrl = (cfg.bgimg && !cfg.bgimg.includes('6750cf40-8cdc-4d76-b7d2-b343841e8ca7') || wmGridMode === 'full')
+                    ? val('bgimg')
+                    : val('logoimg');
 
                 Promise.all([
                     loadJsPdf(), 
-                    getB64(val('f1img')), 
-                    getB64(val('f2img')),
+                    getB64(val('f1img'), true), 
+                    getB64(val('f2img'), true),
                     getB64('https://image2url.com/r2/default/images/1775071648590-9b1104bf-6774-470c-bcb6-9672d743f144.png'), // email icon
                     getB64('https://image2url.com/r2/default/images/1775071789052-124cd7a8-b4d7-4cc4-be4b-292c9219cfa1.avif'), // map icon
                     getB64('https://image2url.com/r2/default/images/1775071726226-c7223ef8-5a07-4307-a68d-a236ea1fdacc.jpg'),  // phone icon
-                    getB64('https://image2url.com/r2/default/images/1775095401249-72b2a981-3249-4431-9e08-15fcc65364ae.jpg'),   // Logo principal
-                    getB64('https://res.cloudinary.com/dkufuo5wc/image/upload/v1780057609/6750cf40-8cdc-4d76-b7d2-b343841e8ca7_zahbl3.jpg') // Fondo Marca de agua
-                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon, mainLogo, watermarkImg]) => {
+                    getB64(val('logoimg'), true),   // Logo principal del diploma
+                    getFadedWatermarkTile(wmSourceUrl, wmOpacityVal), // Marca de agua procesada con opacidad
+                    getB64(cfg.qrimg)      // Imagen QR
+                ]).then(([_, s1b64, s2b64, emailIcon, mapIcon, phoneIcon, mainLogo, watermarkTile, qrImg]) => {
                     const pdf = new window.jspdf.jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
                     const cX = 148.5; 
                     
-                    // Colocar fondo primero
-                    if (watermarkImg) {
-                        pdf.addImage(watermarkImg, "JPEG", 0, 0, 297, 210);
+                    // Dibujar Marca de Agua según configuración (7x6, 6x5, 5x4, 1x1, full, custom)
+                    if (watermarkTile && wmGridMode !== 'none') {
+                        if (wmGridMode === 'full') {
+                            pdf.addImage(watermarkTile, "JPEG", 0, 0, 297, 210, "wm_full", "FAST");
+                        } else if (wmGridMode === '1x1') {
+                            pdf.addImage(watermarkTile, "JPEG", cX - 55, 50, 110, 110, "wm_single", "FAST");
+                        } else {
+                            let cols = 7, rows = 6;
+                            if (wmGridMode === 'custom') {
+                                cols = Math.max(1, parseInt(val('wmCols')) || 7);
+                                rows = Math.max(1, parseInt(val('wmRows')) || 6);
+                            } else if (wmGridMode.includes('x')) {
+                                const parts = wmGridMode.split('x');
+                                cols = parseInt(parts[0]) || 7;
+                                rows = parseInt(parts[1]) || 6;
+                            }
+                            const marginX = 10, marginY = 8;
+                            const usableW = 297 - (marginX * 2);
+                            const usableH = 210 - (marginY * 2);
+                            const cellW = usableW / cols;
+                            const cellH = usableH / rows;
+                            const tileSize = Math.min(cellW * 0.52, cellH * 0.58, 22);
+
+                            for (let r = 0; r < rows; r++) {
+                                for (let c = 0; c < cols; c++) {
+                                    const tx = marginX + (c * cellW) + ((cellW - tileSize) / 2);
+                                    const ty = marginY + (r * cellH) + ((cellH - tileSize) / 2);
+                                    pdf.addImage(watermarkTile, "JPEG", tx, ty, tileSize, tileSize, "wm_tile_grid", "FAST");
+                                }
+                            }
+                        }
                     }
 
                     const T = (txt, y, sz, fnt="helvetica", st="normal", clr=0, x=cX, al="center") => {
                         pdf.setTextColor(clr); pdf.setFont(fnt, st); pdf.setFontSize(sz);
-                        pdf.text(txt, x, y, { align: al });
+                        pdf.text(String(txt || ""), x, y, { align: al });
                     };
 
-                    // Logo
+                    // Logo del diploma
                     if (mainLogo) {
-                        pdf.addImage(mainLogo, "PNG", cX - 17.5, 8, 35, 35);
+                        pdf.addImage(mainLogo, "PNG", cX - 27.5, 5, 55, 55);
                     } else {
-                        pdf.setFillColor(153, 27, 27); pdf.rect(cX-10, 15, 5, 18, 'F');
-                        pdf.setFillColor(225, 29, 42); pdf.rect(cX-3, 10, 5, 23, 'F');
-                        pdf.setFillColor(252, 165, 165); pdf.rect(cX+4, 15, 5, 18, 'F');
-                        T("FUNETEC", 38, 12, "helvetica", "bold");
+                        pdf.setFillColor(153, 27, 27); pdf.rect(cX-17, 18, 9, 27, 'F');
+                        pdf.setFillColor(225, 29, 42); pdf.rect(cX-5, 10, 10, 35, 'F');
+                        pdf.setFillColor(252, 165, 165); pdf.rect(cX+8, 18, 9, 27, 'F');
+                        T("FUNETEC", 53, 18, "helvetica", "bold");
+                    }
+
+                    // Código QR (esquina superior derecha con tamaño y posición configurables)
+                    if (qrImg) {
+                        const qSize = Number(val('qrSize')) || 32;
+                        const qX = Number(val('qrX')) || 242;
+                        const qY = Number(val('qrY')) || 14;
+                        pdf.addImage(qrImg, "PNG", qX, qY, qSize, qSize);
                     }
 
                     // Textos principales
-                    T(val('h1'), 55, 26, "times", "bold");
-                    T(val('h2'), 65, 26, "times", "bold");
-                    T(val('sh1'), 75, 10, "helvetica", "normal", 50);
-                    T(val('sh2'), 80, 10, "helvetica", "normal", 50);
-                    T(val('constar'), 95, 14);
-                    T(fName, 115, 32, "times", "bold");
-                    T(`Identificado con cédula de ciudadanía N.º ${docId}`, 125, 11);
-                    T(val('aprobo'), 140, 14);
+                    T(val('h1'), 65, 26, "times", "bold");
+                    T(val('h2'), 75, 26, "times", "bold");
+                    T(val('sh1'), 85, 10, "helvetica", "normal", 50);
+                    T(val('sh2'), 90, 10, "helvetica", "normal", 50);
+                    T(val('constar'), 102, 14);
+                    T(fName, 120, 32, "times", "bold");
+                    T(`Identificado con CC N.º ${docId}`, 130, 11);
+                    T(val('aprobo'), 142, 14);
                     T(fCourse, 155, 28, "times", "bold");
                     
                     let durText = val('duracion') || "";
                     if (durText.includes('{horas}')) durText = durText.replace('{horas}', cHours);
                     else durText = durText.replace('48', cHours);
 
-                    T(durText, 170, 11, "helvetica", "normal", 50);
-                    T(dStr, 176, 11, "helvetica", "normal", 50);
-                    T(val('vigencia'), 182, 11, "helvetica", "normal", 50);
+                    T(durText, 168, 11, "helvetica", "normal", 50);
+                    T(dStr, 174, 11, "helvetica", "normal", 50);
+                    T(val('vigencia'), 180, 11, "helvetica", "normal", 50);
 
-                    // Firmas (Con imágenes)
+                    // Firmas (Con imágenes de fondo transparente para no tapar la marca de agua)
                     pdf.setDrawColor(0); pdf.setLineWidth(0.5);
                     
                     // Firma 1
-                    pdf.line(40, 180, 110, 180);
-                    if(s1b64) pdf.addImage(s1b64, "PNG", 50, 155, 50, 24);
-                    T(val('f1n'), 185, 9, "helvetica", "bold", 0, 75);
-                    T(val('f1r'), 190, 9, "helvetica", "normal", 0, 75);
+                    pdf.line(40, 178, 110, 178);
+                    if(s1b64) pdf.addImage(s1b64, "PNG", 50, 153, 50, 24);
+                    T(val('f1n'), 183, 9, "helvetica", "bold", 0, 75);
+                    T(val('f1r'), 188, 9, "helvetica", "normal", 0, 75);
 
                     // Firma 2
-                    pdf.line(187, 180, 257, 180);
-                    if(s2b64) pdf.addImage(s2b64, "PNG", 197, 155, 50, 24);
-                    T(val('f2n'), 185, 9, "helvetica", "bold", 0, 222);
-                    T(val('f2r'), 190, 9, "helvetica", "normal", 0, 222);
+                    pdf.line(187, 178, 257, 178);
+                    if(s2b64) pdf.addImage(s2b64, "PNG", 197, 153, 50, 24);
+                    T(val('f2n'), 183, 9, "helvetica", "bold", 0, 222);
+                    T(val('f2r'), 188, 9, "helvetica", "normal", 0, 222);
 
-                    // Footer con los iconos correctos cargados externamente
+                    // Footer en una sola fila alineada como en la imagen de referencia
                     const footerData = [
-                        { x: 45, text: val('ft1'), icon: emailIcon },
-                        { x: 120, text: val('ft2'), icon: mapIcon },
-                        { x: 215, text: val('ft3'), icon: phoneIcon }
+                        { x: 22, text: val('ft1'), icon: emailIcon },
+                        { x: 85, text: val('ft2'), icon: mapIcon },
+                        { x: 152, text: val('ft3'), icon: phoneIcon }
                     ];
 
                     footerData.forEach(f => {
                         if (f.icon) {
-                            // Se ubica el icono de forma centrada donde iba el circulo rojo original (f.x, 198)
-                            pdf.addImage(f.icon, "PNG", f.x - 3, 195, 6, 6);
+                            pdf.addImage(f.icon, "PNG", f.x - 3, 193.5, 5, 5);
                         } else {
-                            // Fallback de seguridad en caso de que la imagen no cargue
                             pdf.setFillColor(225, 29, 42); 
-                            pdf.circle(f.x, 198, 2.5, 'F');
+                            pdf.circle(f.x, 196, 2.2, 'F');
                         }
-                        T(f.text, 199.5, 9, "helvetica", "bold", 50, f.x + 5, "left");
+                        T(f.text, 197.2, 8.5, "helvetica", "bold", 50, f.x + 3.5, "left");
                     });
+
+                    // Sitio web de validación alineado a la derecha en el pie de página con ícono
+                    if (val('web')) {
+                        const webX = 192;
+                        pdf.setFillColor(225, 29, 42);
+                        pdf.circle(webX, 196, 2.3, 'F');
+                        pdf.setDrawColor(255, 255, 255);
+                        pdf.setLineWidth(0.3);
+                        pdf.circle(webX, 196, 1.5, 'S');
+                        pdf.line(webX - 1.5, 196, webX + 1.5, 196);
+                        pdf.line(webX, 196 - 1.5, webX, 196 + 1.5);
+                        T(val('web'), 197.2, 8.5, "helvetica", "bold", 50, webX + 4, "left");
+                    }
 
                     pdf.save(`Certificado_${fName.replace(/\s+/g, "_")}.pdf`);
                     window.UI.closeModal();
