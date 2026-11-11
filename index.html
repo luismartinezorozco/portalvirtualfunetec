@@ -2503,11 +2503,20 @@
                 window.DB.update("certificates", certId, { status: status });
                 const cert = window.DB.get("certificates").find((c) => String(c.id) === String(certId));
                 
+                if (cert && status === "rejected") {
+                    const progress = window.DB.get("progress").find(
+                        (p) => String(p.studentId) === String(cert.studentId) && String(p.courseId) === String(cert.courseId)
+                    );
+                    if (progress) {
+                        window.DB.update("progress", progress.id, { estadoExamen: "reprobado" });
+                    }
+                }
+                
                 const msg = status === "approved" 
                     ? "¡Tu certificado ha sido aprobado y está listo para descargar!" 
-                    : "Tu solicitud de certificado fue rechazada.";
+                    : "Tu solicitud de certificado fue rechazada. Puedes solicitar repetir la evaluación desde el curso o en Mis Certificados.";
                     
-                window.notifyUser(cert.studentId, msg);
+                if (cert) window.notifyUser(cert.studentId, msg);
                 window.Router.navigate("admin-certs");
             }
         };
@@ -2718,11 +2727,39 @@
                 const currentContent = contents[currentContentIndex];
                 const percentage = contents.length === 0 ? 0 : Math.round((completedIds.length / contents.length) * 100);
                 const canTakeExam = percentage === 100 && exam;
-                const certificate = window.DB.get("certificates").find((c) => String(c.studentId) === studentId && String(c.courseId) === courseId);
+                const studentCerts = window.DB.get("certificates").filter((c) => String(c.studentId) === studentId && String(c.courseId) === courseId);
+                const certificate = studentCerts[studentCerts.length - 1] || null;
+                const isCertRejected = certificate && certificate.status === "rejected";
+                const isFailedOrRejected = progress.estadoExamen === "reprobado" || (isCertRejected && progress.estadoExamen !== "solicitado" && progress.estadoExamen !== "habilitado");
                 
                 let examHtml = "";
                 if (canTakeExam) {
-                    if (progress.estadoExamen === "aprobado" || certificate) {
+                    if (progress.estadoExamen === "solicitado") {
+                        examHtml = `
+                            <p class="mb-4 text-warning font-bold">Tu solicitud ha sido enviada.</p>
+                            <p class="text-sm text-gray">Espera a que el administrador o docente habilite nuevamente el examen para ti.</p>
+                        `;
+                    } else if (progress.estadoExamen === "habilitado") {
+                        examHtml = `
+                            <p class="mb-4 text-success font-bold">Tu solicitud fue autorizada. Ya puedes realizar un nuevo intento.</p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card primary" onclick="window.Router.navigate('student-exam', {id: '${courseId}'})">
+                                    <span>Presentar Examen Nuevamente</span>
+                                </button>
+                            </div>
+                        `;
+                    } else if (isFailedOrRejected) {
+                        examHtml = `
+                            <p class="mb-4 text-danger font-bold">
+                                ${isCertRejected ? "Tu certificado fue rechazado." : `Intento fallido. Tienes ${progress.intentos || 1} intento(s) registrados.`}
+                            </p>
+                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
+                                <button class="btn-card warning" onclick="window.StudentViews.requestExamRepeat('${courseId}')">
+                                    <span>Solicitar repetir curso / evaluación</span>
+                                </button>
+                            </div>
+                        `;
+                    } else if (progress.estadoExamen === "aprobado" || (certificate && certificate.status !== "rejected")) {
                         examHtml = `
                             <p class="mb-4">Has aprobado satisfactoriamente la evaluación final de este curso.</p>
                             <div class="action-grid cols-1 m-0 p-0 border-none w-full">
@@ -2730,20 +2767,6 @@
                                     <span>Ir a Mis Certificados</span>
                                 </button>
                             </div>
-                        `;
-                    } else if (progress.estadoExamen === "reprobado") {
-                        examHtml = `
-                            <p class="mb-4 text-danger font-bold">Intento fallido. Tienes ${progress.intentos} intento(s) registrados.</p>
-                            <div class="action-grid cols-1 m-0 p-0 border-none w-full">
-                                <button class="btn-card warning" onclick="window.StudentViews.requestExamRepeat('${courseId}')">
-                                    <span>Solicitar repetir examen</span>
-                                </button>
-                            </div>
-                        `;
-                    } else if (progress.estadoExamen === "solicitado") {
-                        examHtml = `
-                            <p class="mb-4 text-warning font-bold">Tu solicitud ha sido enviada.</p>
-                            <p class="text-sm text-gray">Espera a que el administrador habilite nuevamente el examen para ti.</p>
                         `;
                     } else {
                         examHtml = `
@@ -2790,8 +2813,8 @@
                             </div>
 
                             ${canTakeExam ? `
-                                <div class="card text-center mt-4 border ${progress.estadoExamen === "reprobado" ? "border-danger" : "border-success"} w-full" style="background: ${progress.estadoExamen === "reprobado" ? "#fef2f2" : "var(--white)"}; box-sizing:border-box; word-break:break-word;">
-                                    <h4 class="${progress.estadoExamen === "reprobado" ? "text-danger" : "text-primary"} mb-2 font-bold" style="font-size:1.2rem;">Evaluación Final</h4>
+                                <div class="card text-center mt-4 border ${isFailedOrRejected ? "border-danger" : "border-success"} w-full" style="background: ${isFailedOrRejected ? "#fef2f2" : "var(--white)"}; box-sizing:border-box; word-break:break-word;">
+                                    <h4 class="${isFailedOrRejected ? "text-danger" : "text-primary"} mb-2 font-bold" style="font-size:1.2rem;">Evaluación Final</h4>
                                     ${examHtml}
                                 </div>
                             ` : ""}
@@ -2817,11 +2840,30 @@
             },
             requestExamRepeat: function(courseId) {
                 const studentId = String(window.State.currentUser.id);
-                const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
+                let progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(courseId));
                 
                 if (progress) {
                     window.DB.update("progress", progress.id, { estadoExamen: "solicitado" });
-                    window.UI.showAlert("Se ha enviado la solicitud de repetición de examen al administrador.");
+                } else {
+                    window.DB.add("progress", {
+                        studentId: studentId,
+                        courseId: String(courseId),
+                        completedContentIds: [],
+                        intentos: 1,
+                        estadoExamen: "solicitado"
+                    });
+                }
+
+                const course = window.DB.get("courses").find((c) => String(c.id) === String(courseId));
+                const adminUser = window.DB.get("users").find((u) => u.role === "admin");
+                if (adminUser) {
+                    window.notifyUser(adminUser.id, `${window.State.currentUser.name} ha solicitado repetir la evaluación del curso "${course?.name || 'Curso'}".`);
+                }
+
+                window.UI.showAlert("Se ha enviado la solicitud para realizar nuevamente la evaluación al administrador.");
+                if (window.currentRoute && window.currentRoute.id === "student-certs") {
+                    window.Router.navigate("student-certs");
+                } else {
                     window.Router.navigate("student-course", { id: courseId });
                 }
             },
@@ -3111,12 +3153,22 @@
                         </div>
                     `;
                     
-                    window.DB.add("certificates", {
-                        studentId: studentId,
-                        courseId: String(courseId),
-                        status: "pending",
-                        score: percentage
-                    });
+                    const existingCert = window.DB.get("certificates").find(
+                        (c) => String(c.studentId) === studentId && String(c.courseId) === String(courseId)
+                    );
+                    if (existingCert) {
+                        window.DB.update("certificates", existingCert.id, {
+                            status: "pending",
+                            score: percentage
+                        });
+                    } else {
+                        window.DB.add("certificates", {
+                            studentId: studentId,
+                            courseId: String(courseId),
+                            status: "pending",
+                            score: percentage
+                        });
+                    }
                     
                     const adminUser = window.DB.get("users").find((u) => u.role === "admin");
                     if (adminUser) {
@@ -3165,19 +3217,39 @@
                         const statusText = cert.status === "pending" ? "En revisión" : cert.status === "approved" ? "Aprobado" : "Rechazado";
                         const safeCourseName = (course.name || "Curso").replace(/'/g, "\\'");
                         const safeStudentName = (window.State.currentUser.name || "Estudiante").replace(/'/g, "\\'");
+                        const progress = window.DB.get("progress").find((p) => String(p.studentId) === studentId && String(p.courseId) === String(course.id));
+                        
+                        let actionHtml = '<span class="text-xs text-gray">En espera de aprobación</span>';
+                        if (cert.status === "approved") {
+                            actionHtml = `
+                                <button class="btn btn-primary btn-sm" onclick="window.StudentViews.viewDiploma('${safeCourseName}', '${safeStudentName}', '${cert.id}')">
+                                    Descargar Certificado
+                                </button>
+                            `;
+                        } else if (cert.status === "rejected") {
+                            if (progress?.estadoExamen === "solicitado") {
+                                actionHtml = `<span class="badge badge-warning">Solicitud enviada</span>`;
+                            } else if (progress?.estadoExamen === "habilitado") {
+                                actionHtml = `
+                                    <button class="btn btn-primary btn-sm" onclick="window.Router.navigate('student-exam', {id: '${course.id}'})">
+                                        Presentar Examen
+                                    </button>
+                                `;
+                            } else {
+                                actionHtml = `
+                                    <button class="btn btn-outline btn-sm" onclick="window.StudentViews.requestExamRepeat('${course.id}')">
+                                        Solicitar repetir
+                                    </button>
+                                `;
+                            }
+                        }
                         
                         html += `
                             <tr>
                                 <td><strong>${course.name}</strong></td>
                                 <td>${cert.score}%</td>
                                 <td><span class="badge ${badgeClass}">${statusText}</span></td>
-                                <td>
-                                    ${cert.status === "approved" ? `
-                                        <button class="btn btn-primary btn-sm" onclick="window.StudentViews.viewDiploma('${safeCourseName}', '${safeStudentName}', '${cert.id}')">
-                                            Descargar Certificado
-                                        </button>
-                                    ` : '<span class="text-xs text-gray">No disponible</span>'}
-                                </td>
+                                <td>${actionHtml}</td>
                             </tr>
                         `;
                     }
