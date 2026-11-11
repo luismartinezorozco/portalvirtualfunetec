@@ -135,10 +135,142 @@
         .logo-container { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; }
         .logo-container img, .logo-container svg { height: 80px; width: 100px; object-fit: contain; flex-shrink: 0; }
         
-        .login-wrapper { display: flex; min-height: 100vh; width: 100%; background: var(--bg); }
-        .login-form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; background: var(--bg); }
-        .login-box { background: var(--white); padding: 3rem 2.5rem; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); width: 100%; max-width: 440px; border: 1px solid var(--border); }
-        .login-header { text-align: center; margin-bottom: 2.5rem; }
+        .login-wrapper { display: flex; min-height: 100vh; width: 100%; background: #f3f4f6; }
+        .login-brand-panel {
+            flex: 1.05;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3.25rem 4rem;
+            color: #ffffff;
+            background-color: #6d0e14;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+                radial-gradient(circle at 20% 25%, #9e1922 0%, #680d13 55%, #3d0609 100%);
+            background-size: 48px 48px, 48px 48px, 100% 100%;
+            overflow: hidden;
+        }
+        .login-brand-top { display: flex; align-items: center; gap: 1rem; z-index: 2; }
+        .login-brand-circle {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            flex-shrink: 0;
+        }
+        .login-brand-circle svg { width: 42px; height: 42px; }
+        .login-brand-top-text span {
+            display: block;
+            font-size: 0.72rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+        .login-brand-top-text strong {
+            display: block;
+            font-size: 1.55rem;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            line-height: 1.1;
+            color: #ffffff;
+        }
+        .login-brand-hero { max-width: 470px; z-index: 2; margin: 2rem 0; }
+        .login-brand-hero h1 {
+            font-size: 2.65rem;
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.15rem;
+            color: #ffffff;
+        }
+        .login-brand-hero h1 span {
+            display: block;
+            color: #ff5a60;
+        }
+        .login-brand-hero p {
+            font-size: 0.96rem;
+            line-height: 1.65;
+            color: rgba(255, 255, 255, 0.82);
+            margin-bottom: 1.75rem;
+        }
+        .login-location-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1.25rem;
+            border-radius: 999px;
+            background: rgba(35, 4, 7, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+        }
+        .login-brand-footer {
+            font-size: 0.74rem;
+            color: rgba(255, 255, 255, 0.55);
+            z-index: 2;
+        }
+        .login-form-panel { flex: 0.95; display: flex; align-items: center; justify-content: center; padding: 2rem; background: #f3f4f6; }
+        .login-box { background: var(--white); padding: 2.75rem 2.35rem; border-radius: 22px; box-shadow: 0 20px 45px -15px rgba(17, 24, 39, 0.12), 0 4px 12px -2px rgba(17, 24, 39, 0.04); width: 100%; max-width: 390px; border: 1px solid rgba(229, 231, 235, 0.8); }
+        .login-header { text-align: left; margin-bottom: 1.75rem; }
+        .login-header h2 { font-size: 1.65rem; font-weight: 800; color: #541418; margin-bottom: 0.35rem; letter-spacing: -0.01em; }
+        .login-header p { font-size: 0.84rem; color: #6b7280; line-height: 1.45; }
+        .login-input-wrap { position: relative; display: flex; align-items: center; }
+        .login-input-icon { position: absolute; left: 14px; color: #9ca3af; display: flex; align-items: center; pointer-events: none; }
+        .login-input-icon svg { width: 17px; height: 17px; }
+        .login-box .form-group { margin-bottom: 1.15rem; }
+        .login-box .form-group label { font-size: 0.8rem; font-weight: 700; color: #1f2937; margin-bottom: 0.45rem; }
+        .login-box .form-control { padding-left: 40px; border-radius: 10px; min-height: 45px; font-size: 0.9rem; border-color: #e5e7eb; background-color: #ffffff; }
+        .login-box .form-control:focus { border-color: #7c131a; box-shadow: 0 0 0 3px rgba(124, 19, 26, 0.1); }
+        .login-pass-toggle {
+            position: absolute;
+            right: 8px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 7px;
+            padding: 4px 9px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4b5563;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+        .login-pass-toggle:hover { background: #e5e7eb; color: #111827; }
+        .login-submit-btn {
+            background: linear-gradient(180deg, #8b161d 0%, #6e0f15 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            min-height: 46px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(110, 15, 21, 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+        .login-submit-btn:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(110, 15, 21, 0.35); }
+        .login-security-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 1.25rem;
+            font-size: 0.74rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .login-security-note svg { width: 14px; height: 14px; color: #10b981; flex-shrink: 0; }
 
         @keyframes fadeInLogin { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUpModal { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -225,10 +357,16 @@
             .course-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
             .action-grid.cols-3, .action-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
             .content-list { max-height: none !important; }
+            .login-brand-panel { padding: 2.5rem; }
+            .login-brand-hero h1 { font-size: 2.1rem; }
         }
 
         @media (max-width: 768px) {
             html { font-size: 14px; }
+            .login-wrapper { flex-direction: column; }
+            .login-brand-panel { padding: 2rem 1.5rem; flex: none; }
+            .login-brand-hero { margin: 1.25rem 0; }
+            .login-brand-hero h1 { font-size: 1.85rem; }
             .login-form-panel { padding: 1.5rem; align-items: center; }
             .login-box { padding: 2rem 1.5rem; width: 100%; }
             .sidebar { position: fixed; transform: translateX(-100%); height: 100vh; top: 0; left: 0; box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15); }
@@ -259,25 +397,48 @@
 </head>
 <body>
     <div id="login-view" class="login-wrapper">
+        <div class="login-brand-panel">
+            <div class="login-brand-top">
+                <div class="login-brand-circle">
+                    <svg viewBox="0 0 150 120" xmlns="http://www.w3.org/2000/svg">
+                        <g transform="translate(10, 0)">
+                            <rect x="0" y="10" width="35" height="80" rx="8" fill="var(--primary-dark)" />
+                            <rect x="0" y="50" width="35" height="40" fill="var(--primary-dark)" />
+                            <rect x="45" y="35" width="35" height="55" rx="8" fill="var(--primary)" />
+                            <rect x="45" y="60" width="35" height="30" fill="var(--primary)" />
+                            <rect x="90" y="10" width="35" height="80" rx="8" fill="var(--primary-light)" />
+                            <rect x="90" y="50" width="35" height="40" fill="var(--primary-light)" />
+                        </g>
+                        <text x="75" y="115" font-family="'Inter', sans-serif" font-weight="900" font-size="22" fill="#111827" text-anchor="middle" letter-spacing="1">
+                            FUNETEC
+                        </text>
+                    </svg>
+                </div>
+                <div class="login-brand-top-text">
+                    <span>INSTITUTO TÉCNICO</span>
+                    <strong>FUNETEC</strong>
+                </div>
+            </div>
+
+            <div class="login-brand-hero">
+                <h1>
+                    Sistema administrativo
+                    <span>FUNETEC</span>
+                </h1>
+                <p>Formamos tu futuro. Gestión académica y financiera de estudiantes, pagos, asistencia y más, en un solo lugar.</p>
+                <div class="login-location-pill">Sede Barranquilla</div>
+            </div>
+
+            <div class="login-brand-footer">
+                © 2026 INSTITUTO TÉCNICO FUNETEC · Acceso exclusivo para personal autorizado
+            </div>
+        </div>
+
         <div class="login-form-panel">
             <div class="login-box fade-in">
                 <div class="login-header">
-                    <div class="logo-container">
-                        <svg viewBox="0 0 150 120" xmlns="http://www.w3.org/2000/svg">
-                            <g transform="translate(10, 0)">
-                                <rect x="0" y="10" width="35" height="80" rx="8" fill="var(--primary-dark)" />
-                                <rect x="0" y="50" width="35" height="40" fill="var(--primary-dark)" />
-                                <rect x="45" y="35" width="35" height="55" rx="8" fill="var(--primary)" />
-                                <rect x="45" y="60" width="35" height="30" fill="var(--primary)" />
-                                <rect x="90" y="10" width="35" height="80" rx="8" fill="var(--primary-light)" />
-                                <rect x="90" y="50" width="35" height="40" fill="var(--primary-light)" />
-                            </g>
-                            <text x="75" y="115" font-family="'Inter', sans-serif" font-weight="900" font-size="22" fill="var(--text)" text-anchor="middle" letter-spacing="1">
-                                FUNETEC
-                            </text>
-                        </svg>
-                    </div>
-                    <p class="text-gray mt-4 font-bold">Sistema de Gestión de Aprendizaje</p>
+                    <h2>Iniciar sesión</h2>
+                    <p>Ingresa con el usuario y la contraseña que te asignaron.</p>
                     <p id="loading-db" class="text-primary mt-4 hidden font-bold text-center">Conectando con Firebase...</p>
                 </div>
                 
@@ -285,17 +446,34 @@
                 
                 <form id="login-form" class="hidden">
                     <div class="form-group">
-                        <label for="login-document">Número de Cédula o Correo</label>
-                        <input id="login-document" class="form-control" required placeholder="usuario">
+                        <label for="login-document">Usuario</label>
+                        <div class="login-input-wrap">
+                            <span class="login-input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </span>
+                            <input id="login-document" class="form-control" required placeholder="Tu usuario">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="login-password">Contraseña</label>
-                        <input type="password" id="login-password" class="form-control" required placeholder="Ingresa tu contraseña">
+                        <div class="login-input-wrap">
+                            <span class="login-input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </span>
+                            <input type="password" id="login-password" class="form-control" style="padding-right: 72px;" required placeholder="Tu contraseña">
+                            <button type="button" class="login-pass-toggle" onclick="const p=document.getElementById('login-password'); const isP=p.type==='password'; p.type=isP?'text':'password'; this.querySelector('span').textContent=isP?'Ocultar':'Ver';">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <span>Ver</span>
+                            </button>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-lg w-full mt-4">
-                        Ingresar a la Plataforma
+                    <button type="submit" class="login-submit-btn mt-2">
+                        Ingresar
                     </button>
-                    <p class="text-center text-xs text-gray mt-4">Versión 2.3</p>
+                    <div class="login-security-note">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                        <span>Conexión segura · Una sola sesión por cuenta</span>
+                    </div>
                 </form>
             </div>
         </div>
@@ -2530,7 +2708,12 @@
                 
                 const completedIds = progress.completedContentIds || [];
                 let currentContentIndex = contents.findIndex((c) => !completedIds.includes(String(c.id)));
-                if (currentContentIndex === -1) currentContentIndex = 0;
+                
+                // Si ya completó todos los módulos (el índice es -1), lo dejamos en 
+                // el ÚLTIMO módulo en lugar de regresarlo al principio.
+                if (currentContentIndex === -1) {
+                    currentContentIndex = contents.length > 0 ? contents.length - 1 : 0;
+                }
                 
                 const currentContent = contents[currentContentIndex];
                 const percentage = contents.length === 0 ? 0 : Math.round((completedIds.length / contents.length) * 100);
